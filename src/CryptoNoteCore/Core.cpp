@@ -490,6 +490,18 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
     else if (b.majorVersion >= BLOCK_MAJOR_VERSION_6) {
       b.minorVersion = m_currency.upgradeHeight(BLOCK_MAJOR_VERSION_6) == UpgradeDetectorBase::UNDEF_HEIGHT ? BLOCK_MINOR_VERSION_1 : BLOCK_MINOR_VERSION_0;
     }
+    else if (b.majorVersion >= BLOCK_MAJOR_VERSION_7) {
+      b.minorVersion = m_currency.upgradeHeight(BLOCK_MAJOR_VERSION_7) == UpgradeDetectorBase::UNDEF_HEIGHT ? BLOCK_MINOR_VERSION_1 : BLOCK_MINOR_VERSION_0;
+    }
+    else if (b.majorVersion >= BLOCK_MAJOR_VERSION_8) {
+      b.minorVersion = m_currency.upgradeHeight(BLOCK_MAJOR_VERSION_8) == UpgradeDetectorBase::UNDEF_HEIGHT ? BLOCK_MINOR_VERSION_1 : BLOCK_MINOR_VERSION_0;
+    }
+    else if (b.majorVersion >= BLOCK_MAJOR_VERSION_9) {
+      b.minorVersion = m_currency.upgradeHeight(BLOCK_MAJOR_VERSION_9) == UpgradeDetectorBase::UNDEF_HEIGHT ? BLOCK_MINOR_VERSION_1 : BLOCK_MINOR_VERSION_0;
+    }
+    else if (b.majorVersion >= BLOCK_MAJOR_VERSION_10) {
+      b.minorVersion = m_currency.upgradeHeight(BLOCK_MAJOR_VERSION_10) == UpgradeDetectorBase::UNDEF_HEIGHT ? BLOCK_MINOR_VERSION_1 : BLOCK_MINOR_VERSION_0;
+    }
 
     b.previousBlockHash = get_tail_id();
     b.timestamp = time(NULL);

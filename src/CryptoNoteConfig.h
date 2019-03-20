@@ -37,12 +37,14 @@ const size_t   CRYPTONOTE_TX_SPENDABLE_AGE                    = 10;
 
 const uint64_t CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT             = DIFFICULTY_TARGET * 60; // 7200
 const uint64_t CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1          = DIFFICULTY_TARGET * 6;  // 720 //5.0
+const uint64_t CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V2          = 720; //"TODO undefined yet";            //6.0+
 const size_t   BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW              = 60;
 const size_t   BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW_V1           = 11;                     //5.0
+const size_t   BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW_V2           = 60; //"TODO undefined yet";            //6.0+
 
 const uint64_t MONEY_SUPPLY                                   = (uint64_t)(-1);
-const uint64_t TAIL_EMISSION_REWARD                           = 100;
-const uint64_t COIN                                           = TAIL_EMISSION_REWARD;
+const uint64_t COIN                                           = 100000000;
+const uint64_t TAIL_EMISSION_REWARD                           = 100000000;
 const size_t CRYPTONOTE_COIN_VERSION                          = 1;
 const unsigned EMISSION_SPEED_FACTOR                          = 19;
 static_assert(EMISSION_SPEED_FACTOR <= 8 * sizeof(uint64_t), "Bad EMISSION_SPEED_FACTOR");
@@ -65,10 +67,10 @@ const uint64_t DEFAULT_DUST_THRESHOLD                         = UINT64_C(100000)
 const uint64_t MIN_TX_MIXIN_SIZE                              = 2;
 const uint64_t MAX_TX_MIXIN_SIZE_V1                           = 20;
 const uint64_t MAX_TX_MIXIN_SIZE_V2                           = 20;
-const uint64_t MAX_TX_MIXIN_SIZE                              = MAX_TX_MIXIN_SIZE_V2;
+const uint64_t MAX_TX_MIXIN_SIZE                              = MAX_TX_MIXIN_SIZE_V1;
 const uint32_t MIN_TX_MIXIN_V1_HEIGHT                         = 200000;
 const uint32_t MIN_TX_MIXIN_V2_HEIGHT                         = 800000;
-const uint64_t MAX_TRANSACTION_SIZE_LIMIT                     = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V2 / 2 - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
+const uint64_t MAX_TRANSACTION_SIZE_LIMIT                     = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V2 / 4 - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
 
 const uint64_t EXPECTED_NUMBER_OF_BLOCKS_PER_DAY              = 24 * 60 * 60 / DIFFICULTY_TARGET;
 const size_t   DIFFICULTY_WINDOW                              = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY; // blocks
@@ -102,6 +104,10 @@ const uint32_t UPGRADE_HEIGHT_V3                              = 46000;
 const uint32_t UPGRADE_HEIGHT_V4                              = 110520;
 const uint32_t UPGRADE_HEIGHT_V5                              = 250720;
 const uint32_t UPGRADE_HEIGHT_V6                              = 4294967295;
+const uint32_t UPGRADE_HEIGHT_V7                              = 4294967297;
+const uint32_t UPGRADE_HEIGHT_V8                              = 4294967298;
+const uint32_t UPGRADE_HEIGHT_V9                              = 4294967299;
+const uint32_t UPGRADE_HEIGHT_V10                             = 4294967300;
 
 const unsigned UPGRADE_VOTING_THRESHOLD                      = 90; // percent
 const uint32_t UPGRADE_VOTING_WINDOW                         = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
@@ -129,6 +135,10 @@ const uint8_t  BLOCK_MAJOR_VERSION_3                         =  3;
 const uint8_t  BLOCK_MAJOR_VERSION_4                         =  4;
 const uint8_t  BLOCK_MAJOR_VERSION_5                         =  5;
 const uint8_t  BLOCK_MAJOR_VERSION_6                         =  6;
+const uint8_t  BLOCK_MAJOR_VERSION_7                         =  7;
+const uint8_t  BLOCK_MAJOR_VERSION_8                         =  8;
+const uint8_t  BLOCK_MAJOR_VERSION_9                         =  9;
+const uint8_t  BLOCK_MAJOR_VERSION_10                        = 10;
 
 const uint8_t  BLOCK_MINOR_VERSION_0                         =  0;
 const uint8_t  BLOCK_MINOR_VERSION_1                         =  1;
@@ -204,7 +214,10 @@ const std::initializer_list<CheckpointData> CHECKPOINTS = {
   {230000,"190891fd56763afbc9e7c609a3a90bcb801a504daf2e352060cf1f7dfb9f2896"},
   {240000,"522cbcb5341a1c4a804212923713227363671a2db3ea41f8957a15b6234b17f4"},
   {250721,"a119b644ec0a35c77f8cf7ed6a0ff4d37b7a279ac8fadfb660e83cc795ddb7de"},//5.0.0 was born
-  {275213,"ba51659f63ef31685c0b9e816d9c3b9455fe20cc34aa8ef09a186153e83547a9"}
+  {260000,"cb4b1fd2734dda8ca121d4bf7e8b8612a1c1e88f26d8aac226caf3f10023b567"},
+  {270000,"3b8802ec65b809de52c78dd5c34c27d65fdcf6eaddaf2e295c63958c9061a4b6"},
+  {280000,"c1c98dcc12f58cb5f75b9b2d80977b12f791dacbbdc3dbf7b90d0e4937b34a48"},
+  {283777,"751a37ab2cdc1cdc4c9623fc378632b23b9c61960c17aecd2831916a111d9e5c"}
 };
 
 } // CryptoNote

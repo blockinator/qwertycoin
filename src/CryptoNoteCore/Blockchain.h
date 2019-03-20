@@ -279,6 +279,10 @@ namespace CryptoNote {
     UpgradeDetector m_upgradeDetectorV4;
     UpgradeDetector m_upgradeDetectorV5;
     UpgradeDetector m_upgradeDetectorV6;
+    UpgradeDetector m_upgradeDetectorV7;
+    UpgradeDetector m_upgradeDetectorV8;
+    UpgradeDetector m_upgradeDetectorV9;
+    UpgradeDetector m_upgradeDetectorV10;
 
     PaymentIdIndex m_paymentIdIndex;
     TimestampBlocksIndex m_timestampIndex;
