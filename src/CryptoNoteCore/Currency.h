@@ -45,10 +45,7 @@ public:
 
   size_t timestampCheckWindow() const { return m_timestampCheckWindow; }
   size_t timestampCheckWindow(uint8_t blockMajorVersion) const {
-    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_6) {
-      return timestampCheckWindow_v2();
-    }
-    else if (blockMajorVersion == BLOCK_MAJOR_VERSION_5) {
+    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
       return timestampCheckWindow_v1();
     }
     else {
@@ -56,14 +53,9 @@ public:
     }
   }
   size_t timestampCheckWindow_v1() const { return m_timestampCheckWindow_v1; }
-  size_t timestampCheckWindow_v2() const { return m_timestampCheckWindow_v2; }
-
   uint64_t blockFutureTimeLimit() const { return m_blockFutureTimeLimit; }
   uint64_t blockFutureTimeLimit(uint8_t blockMajorVersion) const {
-    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_6) {
-      return blockFutureTimeLimit_v2();
-    }
-    else if (blockMajorVersion == BLOCK_MAJOR_VERSION_5) {
+    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
       return blockFutureTimeLimit_v1();
     }
     else {
@@ -71,7 +63,6 @@ public:
     }
   }
   uint64_t blockFutureTimeLimit_v1() const { return m_blockFutureTimeLimit_v1; }
-  uint64_t blockFutureTimeLimit_v2() const { return m_blockFutureTimeLimit_v2; }
 
   uint64_t moneySupply() const { return m_moneySupply; }
   unsigned int emissionSpeedFactor() const { return m_emissionSpeedFactor; }
@@ -174,7 +165,6 @@ public:
   difficulty_type nextDifficultyV2(std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
   difficulty_type nextDifficultyV3(std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
   difficulty_type nextDifficultyV5(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
-  difficulty_type nextDifficultyV6(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
 
   bool checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const;
   bool checkProofOfWorkV2(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const;
@@ -203,10 +193,8 @@ private:
 
   size_t m_timestampCheckWindow;
   size_t m_timestampCheckWindow_v1;
-  size_t m_timestampCheckWindow_v2;
   uint64_t m_blockFutureTimeLimit;
   uint64_t m_blockFutureTimeLimit_v1;
-  uint64_t m_blockFutureTimeLimit_v2;
 
   uint64_t m_moneySupply;
   unsigned int m_emissionSpeedFactor;
@@ -252,10 +240,6 @@ private:
   uint32_t m_upgradeHeightV4;
   uint32_t m_upgradeHeightV5;
   uint32_t m_upgradeHeightV6;
-  uint32_t m_upgradeHeightV7;
-  uint32_t m_upgradeHeightV8;
-  uint32_t m_upgradeHeightV9;
-  uint32_t m_upgradeHeightV10;
   unsigned int m_upgradeVotingThreshold;
   uint32_t m_upgradeVotingWindow;
   uint32_t m_upgradeWindow;
@@ -298,10 +282,8 @@ public:
 
   CurrencyBuilder& timestampCheckWindow(size_t val) { m_currency.m_timestampCheckWindow = val; return *this; }
   CurrencyBuilder& timestampCheckWindow_v1(size_t val) { m_currency.m_timestampCheckWindow_v1 = val; return *this; }
-  CurrencyBuilder& timestampCheckWindow_v2(size_t val) { m_currency.m_timestampCheckWindow_v2 = val; return *this; }
   CurrencyBuilder& blockFutureTimeLimit(uint64_t val) { m_currency.m_blockFutureTimeLimit = val; return *this; }
   CurrencyBuilder& blockFutureTimeLimit_v1(uint64_t val) { m_currency.m_blockFutureTimeLimit_v1 = val; return *this; }
-  CurrencyBuilder& blockFutureTimeLimit_v2(uint64_t val) { m_currency.m_blockFutureTimeLimit_v2 = val; return *this; }
 
   CurrencyBuilder& moneySupply(uint64_t val) { m_currency.m_moneySupply = val; return *this; }
   CurrencyBuilder& emissionSpeedFactor(unsigned int val);
@@ -345,10 +327,6 @@ public:
   CurrencyBuilder& upgradeHeightV4(uint64_t val) { m_currency.m_upgradeHeightV4 = static_cast<uint32_t>(val); return *this; }
   CurrencyBuilder& upgradeHeightV5(uint64_t val) { m_currency.m_upgradeHeightV5 = static_cast<uint32_t>(val); return *this; }
   CurrencyBuilder& upgradeHeightV6(uint64_t val) { m_currency.m_upgradeHeightV6 = static_cast<uint32_t>(val); return *this; }
-  CurrencyBuilder& upgradeHeightV7(uint64_t val) { m_currency.m_upgradeHeightV7 = static_cast<uint32_t>(val); return *this; }
-  CurrencyBuilder& upgradeHeightV8(uint64_t val) { m_currency.m_upgradeHeightV8 = static_cast<uint32_t>(val); return *this; }
-  CurrencyBuilder& upgradeHeightV9(uint64_t val) { m_currency.m_upgradeHeightV9 = static_cast<uint32_t>(val); return *this; }
-  CurrencyBuilder& upgradeHeightV10(uint64_t val){ m_currency.m_upgradeHeightV10 =static_cast<uint32_t>(val); return *this; }
   CurrencyBuilder& upgradeVotingThreshold(unsigned int val);
   CurrencyBuilder& upgradeVotingWindow(size_t val) { m_currency.m_upgradeVotingWindow = static_cast<uint32_t>(val); return *this; }
   CurrencyBuilder& upgradeWindow(size_t val);
