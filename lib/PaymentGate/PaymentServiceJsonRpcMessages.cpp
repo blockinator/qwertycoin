@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018-2019 The Karbo developers
-// Copyright (c) 2019, The Qwertycoin developers
+// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018, Karbo developers
 //
 // This file is part of Qwertycoin.
 //
@@ -41,25 +40,6 @@ void GetViewKey::Request::serialize(CryptoNote::ISerializer& serializer) {
 
 void GetViewKey::Response::serialize(CryptoNote::ISerializer& serializer) {
   serializer(viewSecretKey, "viewSecretKey");
-}
-
-void GetMnemonicSeed::Request::serialize(CryptoNote::ISerializer& serializer) {
-  if (!serializer(address, "address")) {
-    throw RequestSerializationError();
-  }
-}
-
-void GetMnemonicSeed::Response::serialize(CryptoNote::ISerializer& serializer) {
-  serializer(mnemonicSeed, "mnemonicSeed");
-}
-
-void Export::Request::serialize(CryptoNote::ISerializer& serializer) {
-  if (!serializer(fileName, "fileName")) {
-    throw RequestSerializationError();
-  }
-}
-
-void Export::Response::serialize(CryptoNote::ISerializer& serializer) {
 }
 
 void GetStatus::Request::serialize(CryptoNote::ISerializer& serializer) {
@@ -112,17 +92,6 @@ void DeleteAddress::Request::serialize(CryptoNote::ISerializer& serializer) {
   if (!serializer(address, "address")) {
     throw RequestSerializationError();
   }
-}
-
-void CreateAddressList::Request::serialize(CryptoNote::ISerializer& serializer) {
-  if (!serializer(spendSecretKeys, "spendSecretKeys")) {
-    //TODO: replace it with error codes
-    throw RequestSerializationError();
-  }
-}
-
-void CreateAddressList::Response::serialize(CryptoNote::ISerializer& serializer) {
-  serializer(addresses, "addresses");
 }
 
 void DeleteAddress::Response::serialize(CryptoNote::ISerializer& serializer) {

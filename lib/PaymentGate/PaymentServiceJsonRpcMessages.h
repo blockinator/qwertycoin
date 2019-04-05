@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018-2019 The Karbo developers
-// Copyright (c) 2019, The Qwertycoin developers
+// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018, Karbo developers
 //
 // This file is part of Qwertycoin.
 //
@@ -57,18 +56,6 @@ struct Reset {
   };
 };
 
-struct Export {
-  struct Request {
-    std::string fileName;
-
-    void serialize(CryptoNote::ISerializer& serializer);
-  };
-
-  struct Response {
-    void serialize(CryptoNote::ISerializer& serializer);
-  };
-};
-
 struct GetViewKey {
   struct Request {
     void serialize(CryptoNote::ISerializer& serializer);
@@ -76,20 +63,6 @@ struct GetViewKey {
 
   struct Response {
     std::string viewSecretKey;
-
-    void serialize(CryptoNote::ISerializer& serializer);
-  };
-};
-
-struct GetMnemonicSeed {
-  struct Request {
-    std::string address;
-
-    void serialize(CryptoNote::ISerializer& serializer);
-  };
-
-  struct Response {
-    std::string mnemonicSeed;
 
     void serialize(CryptoNote::ISerializer& serializer);
   };
@@ -152,20 +125,6 @@ struct CreateAddress {
 
   struct Response {
     std::string address;
-
-    void serialize(CryptoNote::ISerializer& serializer);
-  };
-};
-
-struct CreateAddressList {
-  struct Request {
-    std::vector<std::string> spendSecretKeys;
-
-    void serialize(CryptoNote::ISerializer& serializer);
-  };
-
-  struct Response {
-    std::vector<std::string> addresses;
 
     void serialize(CryptoNote::ISerializer& serializer);
   };
