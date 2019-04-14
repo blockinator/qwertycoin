@@ -33,27 +33,29 @@ set(QwertycoinFramework_INCLUDE_DIRS ${QwertycoinFramework_INCLUDE_DIRS} PARENT_
 
 # QwertycoinFramework
 
-add_custom_target(QwertycoinFramework)
-add_dependencies(QwertycoinFramework
-    QwertycoinFramework::BlockchainExplorer
-    QwertycoinFramework::Common
-    QwertycoinFramework::Crypto
-    QwertycoinFramework::CryptoNoteCore
-    QwertycoinFramework::CryptoNoteProtocol
-    QwertycoinFramework::Http
-    QwertycoinFramework::InProcessNode
-    QwertycoinFramework::JsonRpcServer
-    QwertycoinFramework::Logging
-    QwertycoinFramework::Mnemonics
-    QwertycoinFramework::NodeRpcProxy
-    QwertycoinFramework::P2p
-    QwertycoinFramework::PaymentGate
-    QwertycoinFramework::Rpc
-    QwertycoinFramework::Serialization
-    QwertycoinFramework::System
-    QwertycoinFramework::Transfers
-    QwertycoinFramework::Wallet
+set(QwertycoinFramework_LIBS
+    QwertycoinFramework_BlockchainExplorer
+    QwertycoinFramework_Common
+    QwertycoinFramework_Crypto
+    QwertycoinFramework_CryptoNoteCore
+    QwertycoinFramework_CryptoNoteProtocol
+    QwertycoinFramework_Http
+    QwertycoinFramework_InProcessNode
+    QwertycoinFramework_JsonRpcServer
+    QwertycoinFramework_Logging
+    QwertycoinFramework_Mnemonics
+    QwertycoinFramework_NodeRpcProxy
+    QwertycoinFramework_P2p
+    QwertycoinFramework_PaymentGate
+    QwertycoinFramework_Rpc
+    QwertycoinFramework_Serialization
+    QwertycoinFramework_System
+    QwertycoinFramework_Transfers
+    QwertycoinFramework_Wallet
 )
+
+add_custom_target(QwertycoinFramework)
+add_dependencies(QwertycoinFramework ${QwertycoinFramework_LIBS})
 
 # QwertycoinFramework::BlockchainExplorer
 
@@ -381,22 +383,22 @@ target_include_directories(QwertycoinFramework_Logging PRIVATE ${QwertycoinFrame
 # QwertycoinFramework::Mnemonics
 
 set(QwertycoinFramework_Mnemonics_SOURCES
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/chinese_simplified.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/dutch.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/electrum-words.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/electrum-words.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/english.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/french.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/german.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/italian.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/japanese.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/language_base.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/polish.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/portuguese.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/russian.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/singleton.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/spanish.h"
-    "${CMAKE_CURRENT_LIST_DIR}/mnemonics/ukrainian.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/chinese_simplified.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/dutch.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/electrum-words.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/electrum-words.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/english.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/french.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/german.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/italian.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/japanese.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/language_base.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/polish.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/portuguese.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/russian.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/singleton.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/spanish.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Mnemonics/ukrainian.h"
 )
 
 add_library(QwertycoinFramework_Mnemonics STATIC ${QwertycoinFramework_Mnemonics_SOURCES})
@@ -453,6 +455,10 @@ set(QwertycoinFramework_P2p_LIBS
     MiniUPnP::miniupnpc
     QwertycoinFramework::CryptoNoteProtocol
 )
+
+if(WIN32 AND MSVC)
+    list(APPEND QwertycoinFramework_P2p_LIBS Bcrypt)
+endif()
 
 add_library(QwertycoinFramework_P2p STATIC ${QwertycoinFramework_P2p_SOURCES})
 add_library(QwertycoinFramework::P2p ALIAS QwertycoinFramework_P2p)
@@ -761,6 +767,16 @@ target_include_directories(QwertycoinFramework_Wallet PRIVATE ${QwertycoinFramew
 target_link_libraries(QwertycoinFramework_Wallet PRIVATE ${QwertycoinFramework_Wallet_LIBS})
 
 # QwertycoinFramework::WalletLegacy # TODO: Merge this target into QwertycoinFramework::Wallet
+
+if(BUILD_WITH_COVERAGE AND (${CMAKE_BUILD_TYPE} MATCHES Debug))
+    message(STATUS "Included code-coverage settings.")
+    message(STATUS "NOTE: Code-coverage is enabled by default when CMAKE_BUILD_TYPE=Debug.")
+
+    # Enable code-coverage settings for each library
+    foreach(lib ${QwertycoinFramework_LIBS})
+        target_link_libraries(${lib} PUBLIC codecov)
+    endforeach()
+endif()
 
 install(TARGETS
             QwertycoinFramework_BlockchainExplorer

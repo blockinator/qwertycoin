@@ -1,6 +1,7 @@
 # Qwertycoin: C++ client, tools and libraries.
-# Copyright 2019 The Qwertycoin Group.
+# Copyright 2019 (c) The Qwertycoin Group.
 # Licensed under the GNU General Public License, Version 3.
+# See the file LICENSE from this package for details.
 
 cmake_minimum_required(VERSION 3.10)
 
@@ -26,8 +27,8 @@ set(HUNTER_CONFIGURATION_TYPES Release CACHE STRING "Hunter configuration types"
 set(HUNTER_JOBS_NUMBER 4 CACHE STRING "Hunter jobs number")
 include(hunter/HunterGate)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.23.122.tar.gz"
-    SHA1 "d8c252862a9900a703167ba703bfb1b17977948f"
+    URL "https://github.com/ruslo/hunter/archive/v0.23.150.tar.gz"
+    SHA1 "7f1604b4dd3fb3e9478fa5a60928486df3a6b5cb"
     FILEPATH "${CMAKE_CURRENT_LIST_DIR}/cmake/hunter/HunterConfig.cmake"
 )
 
@@ -89,6 +90,7 @@ include(project/GlobalVariables)
 set_directory_properties(PROPERTIES EP_BASE "${CMAKE_CURRENT_BINARY_DIR}/_ExternalProjects")
 include(ExternalProject)
 include(external/Boost)
+include(external/codecov)
 include(external/GTest)
 include(external/MiniUPnP)
 include(external/sparsehash)
@@ -101,6 +103,7 @@ if(BUILD_WITH_TOOLS)
 endif()
 
 if(BUILD_WITH_TESTS)
+    enable_testing()
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/tests")
 endif()
 
