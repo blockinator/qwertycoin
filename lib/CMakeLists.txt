@@ -24,6 +24,9 @@ elseif(APPLE)
 elseif(ANDROID)
     list(APPEND QwertycoinFramework_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/Platform/Android")
     list(APPEND QwertycoinFramework_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/Platform/Posix")
+elseif(FREEBSD)
+    list(APPEND QwertycoinFramework_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD")
+    list(APPEND QwertycoinFramework_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/Platform/Posix")
 else()
     list(APPEND QwertycoinFramework_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/Platform/Linux")
     list(APPEND QwertycoinFramework_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/Platform/Posix")
@@ -62,10 +65,13 @@ add_dependencies(QwertycoinFramework ${QwertycoinFramework_LIBS})
 set(QwertycoinFramework_BlockchainExplorer_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/BlockchainExplorer.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/BlockchainExplorer.h"
+    "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/BlockchainExplorerData.h"
     "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/BlockchainExplorerDataBuilder.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/BlockchainExplorerDataBuilder.h"
     "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/BlockchainExplorerErrors.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/BlockchainExplorerErrors.h"
+    "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/IBlockchainExplorer.h"
+    "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/IBlockchainObserver.h"
 )
 
 add_library(QwertycoinFramework_BlockchainExplorer STATIC ${QwertycoinFramework_BlockchainExplorer_SOURCES})
@@ -91,9 +97,7 @@ set(QwertycoinFramework_Common_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/Common/DnsTools.h"
     "${CMAKE_CURRENT_LIST_DIR}/Common/FileMappedVector.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/Common/FileMappedVector.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Common/IInputStream.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/Common/IInputStream.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Common/IOutputStream.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/Common/IOutputStream.h"
     "${CMAKE_CURRENT_LIST_DIR}/Common/JsonValue.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/Common/JsonValue.h"
@@ -315,14 +319,14 @@ target_include_directories(QwertycoinFramework_CryptoNoteProtocol PRIVATE ${Qwer
 # QwertycoinFramework::Http
 
 set(QwertycoinFramework_Http_SOURCES
-    "${CMAKE_CURRENT_LIST_DIR}/HTTP/HttpParser.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/HTTP/HttpParser.h"
-    "${CMAKE_CURRENT_LIST_DIR}/HTTP/HttpParserErrorCodes.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/HTTP/HttpParserErrorCodes.h"
-    "${CMAKE_CURRENT_LIST_DIR}/HTTP/HttpRequest.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/HTTP/HttpRequest.h"
-    "${CMAKE_CURRENT_LIST_DIR}/HTTP/HttpResponse.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/HTTP/HttpResponse.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Http/HttpParser.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/Http/HttpParser.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Http/HttpParserErrorCodes.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/Http/HttpParserErrorCodes.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Http/HttpRequest.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/Http/HttpRequest.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Http/HttpResponse.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/Http/HttpResponse.h"
 )
 
 add_library(QwertycoinFramework_Http STATIC ${QwertycoinFramework_Http_SOURCES})
@@ -414,16 +418,21 @@ set(QwertycoinFramework_NodeRpcProxy_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/NodeRpcProxy/NodeRpcProxy.h"
 )
 
+set(QwertycoinFramework_NodeRpcProxy_LIBS
+    QwertycoinFramework::Http
+    QwertycoinFramework::Rpc
+    QwertycoinFramework::System
+)
+
 add_library(QwertycoinFramework_NodeRpcProxy STATIC ${QwertycoinFramework_NodeRpcProxy_SOURCES})
 add_library(QwertycoinFramework::NodeRpcProxy ALIAS QwertycoinFramework_NodeRpcProxy)
 target_include_directories(QwertycoinFramework_NodeRpcProxy PRIVATE ${QwertycoinFramework_INCLUDE_DIRS})
-target_link_libraries(QwertycoinFramework_NodeRpcProxy PRIVATE QwertycoinFramework::System)
+target_link_libraries(QwertycoinFramework_NodeRpcProxy PRIVATE ${QwertycoinFramework_NodeRpcProxy_LIBS})
 
 # QwertycoinFramework::P2p
 
 set(QwertycoinFramework_P2p_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/P2p/ConnectionContext.h"
-    "${CMAKE_CURRENT_LIST_DIR}/P2p/IP2pNodeInternal.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/P2p/IP2pNodeInternal.h"
     "${CMAKE_CURRENT_LIST_DIR}/P2p/LevinProtocol.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/P2p/LevinProtocol.h"
@@ -438,7 +447,6 @@ set(QwertycoinFramework_P2p_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/P2p/P2pContext.h"
     "${CMAKE_CURRENT_LIST_DIR}/P2p/P2pContextOwner.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/P2p/P2pContextOwner.h"
-    "${CMAKE_CURRENT_LIST_DIR}/P2p/P2pInterfaces.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/P2p/P2pInterfaces.h"
     "${CMAKE_CURRENT_LIST_DIR}/P2p/P2pNetworks.h"
     "${CMAKE_CURRENT_LIST_DIR}/P2p/P2pNode.cpp"
@@ -646,6 +654,27 @@ elseif(ANDROID)
         "${CMAKE_CURRENT_LIST_DIR}/Platform/Android/System/TcpListener.h"
         "${CMAKE_CURRENT_LIST_DIR}/Platform/Android/System/Timer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Platform/Android/System/Timer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/Posix/System/MemoryMappedFile.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/Posix/System/MemoryMappedFile.h"
+    )
+elseif(FREEBSD)
+    list(APPEND QwertycoinFramework_System_SOURCES
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/Context.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/Dispatcher.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/Dispatcher.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/ErrorMessage.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/ErrorMessage.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/Future.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/Ipv4Resolver.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/Ipv4Resolver.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/TcpConnection.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/TcpConnection.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/TcpConnector.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/TcpConnector.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/TcpListener.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/TcpListener.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/Timer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Platform/FreeBSD/System/Timer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Platform/Posix/System/MemoryMappedFile.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Platform/Posix/System/MemoryMappedFile.h"
     )
