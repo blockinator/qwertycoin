@@ -19,12 +19,13 @@
 #pragma once
 
 #include <crypto/crypto.h>
-#include <CryptoNoteConfig.h>
+#include <../src/config/CryptoNoteConfig.h>
 #include <CryptoNoteCore/CryptoNoteStatInfo.h>
 #include <CryptoNoteCore/CryptoNoteSerialization.h>
 #include <P2p/P2pProtocolTypes.h>
 #include <Serialization/ISerializer.h>
 #include <Serialization/SerializationOverloads.h>
+#include "version.h"
 
 namespace CryptoNote {
 
@@ -71,6 +72,7 @@ struct basic_node_data
         KV_MEMBER(peer_id)
         KV_MEMBER(local_time)
         KV_MEMBER(my_port)
+        KV_MEMBER(node_version)
     }
 
     uuid network_id;
@@ -78,6 +80,7 @@ struct basic_node_data
     uint64_t local_time;
     uint32_t my_port;
     PeerIdType peer_id;
+    std::string node_version = PROJECT_VERSION;
 };
 
 struct CORE_SYNC_DATA

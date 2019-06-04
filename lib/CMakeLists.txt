@@ -1,6 +1,6 @@
 # Generate version.h header
 configure_file(
-    "${CMAKE_CURRENT_LIST_DIR}/version.h.in"
+    "${CMAKE_CURRENT_LIST_DIR}/../src/config/version.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/version.h"
     @ONLY
 )
@@ -557,7 +557,6 @@ set(QwertycoinFramework_Serialization_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/Serialization/KVBinaryInputStreamSerializer.h"
     "${CMAKE_CURRENT_LIST_DIR}/Serialization/KVBinaryOutputStreamSerializer.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/Serialization/KVBinaryOutputStreamSerializer.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Serialization/MemoryStream.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/Serialization/MemoryStream.h"
     "${CMAKE_CURRENT_LIST_DIR}/Serialization/SerializationOverloads.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/Serialization/SerializationOverloads.h"
@@ -581,7 +580,6 @@ set(QwertycoinFramework_System_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/System/Event.h"
     "${CMAKE_CURRENT_LIST_DIR}/System/EventLock.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/System/EventLock.h"
-    "${CMAKE_CURRENT_LIST_DIR}/System/InterruptedException.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/System/InterruptedException.h"
     "${CMAKE_CURRENT_LIST_DIR}/System/Ipv4Address.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/System/Ipv4Address.h"
@@ -738,6 +736,7 @@ target_link_libraries(QwertycoinFramework_Transfers PRIVATE QwertycoinFramework:
 
 set(QwertycoinFramework_Wallet_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/Wallet/IFusionManager.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Wallet/IWallet.h"
     "${CMAKE_CURRENT_LIST_DIR}/Wallet/LegacyKeysImporter.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/Wallet/LegacyKeysImporter.h"
     "${CMAKE_CURRENT_LIST_DIR}/Wallet/WalletAsyncContextCounter.cpp"
@@ -757,6 +756,7 @@ set(QwertycoinFramework_Wallet_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/Wallet/WalletSerializationV2.h"
     "${CMAKE_CURRENT_LIST_DIR}/Wallet/WalletUtils.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/Wallet/WalletUtils.h"
+    "${CMAKE_CURRENT_LIST_DIR}/WalletLegacy/IWalletLegacy.h"
     "${CMAKE_CURRENT_LIST_DIR}/WalletLegacy/KeysStorage.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/WalletLegacy/KeysStorage.h"
     "${CMAKE_CURRENT_LIST_DIR}/WalletLegacy/WalletHelper.cpp"
