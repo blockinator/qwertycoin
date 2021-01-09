@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2016, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
 // Copyright (c) 2016-2018, The Karbo developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -25,6 +25,7 @@
 #include <Common/StringTools.h>
 #include <Common/PathTools.h>
 #include <crypto/hash.h>
+#include <Breakpad/Breakpad.h>
 #include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/Core.h>
 #include <CryptoNoteCore/CoreConfig.h>
@@ -32,13 +33,12 @@
 #include <CryptoNoteCore/MinerConfig.h>
 #include <CryptoNoteProtocol/CryptoNoteProtocolHandler.h>
 #include <CryptoNoteProtocol/ICryptoNoteProtocolQuery.h>
+#include <Global/Checkpoints.h>
 #include <Logging/LoggerManager.h>
 #include <P2p/NetNode.h>
 #include <P2p/NetNodeConfig.h>
 #include <Rpc/RpcServer.h>
 #include <Rpc/RpcServerConfig.h>
-#include <config/CliHeader.h>
-#include <config/CryptoNoteCheckpoints.h>
 #include <version.h>
 #include "DaemonCommandsHandler.h"
 
@@ -49,6 +49,7 @@
 using Common::JsonValue;
 using namespace CryptoNote;
 using namespace Logging;
+using namespace Qwertycoin;
 
 namespace po = boost::program_options;
 
@@ -131,6 +132,13 @@ const command_line::arg_descriptor<bool> arg_testnet_on  = {
     false
 };
 
+const command_line::arg_descriptor<bool> arg_fixed_difficulty  = {
+    "fixed-difficulty",
+    "Fixed difficulty used for testing.",
+    0
+};
+
+
 const command_line::arg_descriptor<std::string> arg_load_checkpoints = {
     "load-checkpoints",
     "<filename> Load checkpoints from csv file.",
@@ -158,7 +166,7 @@ void print_genesis_tx_hex(const po::variables_map &vm, LoggerManager &logManager
     std::cout
         << getProjectCLIHeader() << std::endl
         << std::endl
-        << "Replace the current GENESIS_COINBASE_TX_HEX line in src/config/CryptoNoteConfig.h with this one:" << std::endl
+        << "Replace the current GENESIS_COINBASE_TX_HEX line in lib/Global/CryptoNoteConfig.h with this one:" << std::endl
         << "const char GENESIS_COINBASE_TX_HEX[] = \"" << tx_hex << "\";" << std::endl;
 }
 
@@ -205,6 +213,8 @@ int main(int argc, char *argv[])
     _CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
+    Qwertycoin::Breakpad::ExceptionHandler exceptionHandler;
+
     LoggerManager logManager;
     LoggerRef logger(logManager, "daemon");
 
@@ -224,6 +234,7 @@ int main(int argc, char *argv[])
         command_line::add_arg(desc_cmd_sett, arg_console);
         command_line::add_arg(desc_cmd_sett, arg_restricted_rpc);
         command_line::add_arg(desc_cmd_sett, arg_testnet_on);
+        command_line::add_arg(desc_cmd_sett, arg_fixed_difficulty);
         command_line::add_arg(desc_cmd_sett, arg_enable_cors);
         command_line::add_arg(desc_cmd_sett, arg_set_fee_address);
         command_line::add_arg(desc_cmd_sett, arg_set_view_key);
@@ -318,10 +329,17 @@ int main(int argc, char *argv[])
         if (testnet_mode) {
             logger(INFO) << "Starting in testnet mode!";
         }
+        difficulty_type fixed_difficulty = command_line::get_arg(vm, arg_fixed_difficulty);
+        if (fixed_difficulty) {
+            logger(INFO) << "Use fixed difficulty " << fixed_difficulty;
+        }
 
         // create objects and link them
         CryptoNote::CurrencyBuilder currencyBuilder(logManager);
         currencyBuilder.testnet(testnet_mode);
+        if (fixed_difficulty) {
+            currencyBuilder.fix_difficulty(fixed_difficulty);
+        }
         try {
             currencyBuilder.currency();
         } catch (std::exception &) {
@@ -419,7 +437,6 @@ int main(int argc, char *argv[])
                     std::cout << "wrong block index parameter" << ENDL;
                     return 1;
                 }
-                logger(INFO, BRIGHT_YELLOW) << "Rollback blockchain to height " << _index;
                 ccore.rollbackBlockchain(_index);
             }
         }

@@ -3,12 +3,17 @@
 # Licensed under the GNU General Public License, Version 3.
 # See the file LICENSE from this package for details.
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 if(POLICY CMP0074)
     # Allow find_package() to use <PackageName>_ROOT variables.
     # This policy was introduced in CMake version 3.12.
     cmake_policy(SET CMP0074 NEW)
+endif()
+
+if(POLICY CMP0087)
+    # Install CODE|SCRIPT allow the use of generator expressions.
+    cmake_policy(SET CMP0087 NEW)
 endif()
 
 list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -27,8 +32,8 @@ set(HUNTER_CONFIGURATION_TYPES Release;Debug CACHE STRING "Hunter configuration 
 set(HUNTER_JOBS_NUMBER 4 CACHE STRING "Hunter jobs number")
 include(hunter/HunterGate)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.23.190.tar.gz"
-    SHA1 "bc7da329d2493201de28f0c2a5fcd4de1415c477"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.23.254.tar.gz"
+    SHA1 "017e688b9848c1f695303e8cfe9f35d40e154112"
     FILEPATH "${CMAKE_CURRENT_LIST_DIR}/cmake/hunter/HunterConfig.cmake"
 )
 
@@ -69,16 +74,18 @@ if(GIT_FOUND)
 endif()
 
 set(PROJECT_DISPLAY_NAME "Qwertycoin")
+set(PROJECT_SHORT_NAME "qwcc")
 set(PROJECT_NAME "qwertycoin")
 set(PROJECT_DESCRIPTION "Safe. Simple. Seamless. Secure.")
 set(PROJECT_VERSION "${PROJECT_GIT_TAG}")
-set(PROJECT_COPYRIGHT "Copyright 2019 The Qwertycoin Group")
+set(PROJECT_COPYRIGHT "Copyright (c) 2018-2020, The Qwertycoin Group.")
 set(PROJECT_VENDOR_NAME "The Qwertycoin Group")
 set(PROJECT_VENDOR_URL "https://qwertycoin.org")
+set(PROJECT_VENDOR_DOMAIN_REVERSED "org.qwertycoin")
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX)
 
-if(APPLE OR FREEBSD)
-    # Compile src/Platform/OSX/System/asm.s file.
+if(UNIX)
+    # Compile src/Platform/OSX/System/asm.s and breakpad_getcontext.S files.
     enable_language(ASM)
 endif()
 
@@ -89,7 +96,10 @@ include(project/GlobalVariables)
 # External dependencies
 set_directory_properties(PROPERTIES EP_BASE "${CMAKE_CURRENT_BINARY_DIR}/_ExternalProjects")
 include(ExternalProject)
+set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_FetchContent" CACHE PATH "FetchContent" FORCE)
+include(FetchContent)
 include(external/Boost)
+include(external/Breakpad)
 include(external/codecov)
 include(external/GTest)
 include(external/MiniUPnP)

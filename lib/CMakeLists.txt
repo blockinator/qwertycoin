@@ -1,6 +1,6 @@
 # Generate version.h header
 configure_file(
-    "${CMAKE_CURRENT_LIST_DIR}/../src/config/version.h.in"
+    "${CMAKE_CURRENT_LIST_DIR}/Global/version.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/version.h"
     @ONLY
 )
@@ -8,6 +8,7 @@ message(STATUS "Generated version.h header: ${CMAKE_CURRENT_BINARY_DIR}/version.
 
 set(QwertycoinFramework_INCLUDE_DIRS
     "${Boost_INCLUDE_DIRS}"
+    "${Breakpad_INCLUDE_DIRS}"
     "${MINIUPNP_INCLUDE_DIRS}"
     "${SPARSEHASH_INCLUDE_DIRS}"
     "${CMAKE_CURRENT_BINARY_DIR}"
@@ -38,10 +39,12 @@ set(QwertycoinFramework_INCLUDE_DIRS ${QwertycoinFramework_INCLUDE_DIRS} PARENT_
 
 set(QwertycoinFramework_LIBS
     QwertycoinFramework_BlockchainExplorer
+    QwertycoinFramework_Breakpad
     QwertycoinFramework_Common
     QwertycoinFramework_Crypto
     QwertycoinFramework_CryptoNoteCore
     QwertycoinFramework_CryptoNoteProtocol
+    QwertycoinFramework_Global
     QwertycoinFramework_Http
     QwertycoinFramework_InProcessNode
     QwertycoinFramework_JsonRpcServer
@@ -74,9 +77,46 @@ set(QwertycoinFramework_BlockchainExplorer_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/BlockchainExplorer/IBlockchainObserver.h"
 )
 
+set(QwertycoinFramework_BlockchainExplorer_LIBS
+    QwertycoinFramework::Global
+)
+
 add_library(QwertycoinFramework_BlockchainExplorer STATIC ${QwertycoinFramework_BlockchainExplorer_SOURCES})
 add_library(QwertycoinFramework::BlockchainExplorer ALIAS QwertycoinFramework_BlockchainExplorer)
 target_include_directories(QwertycoinFramework_BlockchainExplorer PRIVATE ${QwertycoinFramework_INCLUDE_DIRS})
+target_link_libraries(QwertycoinFramework_BlockchainExplorer PRIVATE ${QwertycoinFramework_BlockchainExplorer_LIBS})
+
+# QwertycoinFramework::Breakpad
+
+set(QwertycoinFramework_Breakpad_SOURCES
+    ${Breakpad_SOURCES} # Compile Google Brekapad sources as part of this lib
+    "${CMAKE_CURRENT_LIST_DIR}/Breakpad/Breakpad.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/Breakpad/Breakpad.h"
+)
+
+set(QwertycoinFramework_Breakpad_LIBS
+    QwertycoinFramework::Global
+)
+
+if(APPLE)
+    find_library(CoreFoundationLibrary CoreFoundation)
+    find_library(CFNetworkLibrary CFNetwork)
+    set(QwertycoinFramework_Breakpad_LIBS
+        ${QwertycoinFramework_Breakpad_LIBS}
+        ${CoreFoundationLibrary}
+        ${CFNetworkLibrary}
+    )
+endif()
+
+add_library(QwertycoinFramework_Breakpad STATIC ${QwertycoinFramework_Breakpad_SOURCES})
+add_library(QwertycoinFramework::Breakpad ALIAS QwertycoinFramework_Breakpad)
+target_include_directories(QwertycoinFramework_Breakpad PRIVATE ${QwertycoinFramework_INCLUDE_DIRS})
+target_link_libraries(QwertycoinFramework_Breakpad PRIVATE ${QwertycoinFramework_Breakpad_LIBS})
+
+if(WIN32)
+    # Fix for "cannot convert argument 1 from 'const wchar_t *' to 'LPCSTR'" and similar issues
+    target_compile_definitions(QwertycoinFramework_Breakpad PRIVATE -DUNICODE -D_UNICODE)
+endif()
 
 # QwertycoinFramework::Common
 
@@ -142,6 +182,7 @@ set(QwertycoinFramework_Common_SOURCES
 set(QwertycoinFramework_Common_LIBS
     Threads::Threads
     QwertycoinFramework::Crypto
+    QwertycoinFramework::Global
 )
 
 add_library(QwertycoinFramework_Common STATIC ${QwertycoinFramework_Common_SOURCES})
@@ -285,6 +326,7 @@ set(QwertycoinFramework_CryptoNoteCore_LIBS
     QwertycoinFramework::BlockchainExplorer
     QwertycoinFramework::Common
     QwertycoinFramework::Crypto
+    QwertycoinFramework::Global
     QwertycoinFramework::Logging
     QwertycoinFramework::Serialization
 )
@@ -305,9 +347,27 @@ set(QwertycoinFramework_CryptoNoteProtocol_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/CryptoNoteProtocol/ICryptoNoteProtocolQuery.h"
 )
 
+set(QwertycoinFramework_CryptoNoteProtocol_LIBS
+    QwertycoinFramework::Global
+)
+
 add_library(QwertycoinFramework_CryptoNoteProtocol STATIC ${QwertycoinFramework_CryptoNoteProtocol_SOURCES})
 add_library(QwertycoinFramework::CryptoNoteProtocol ALIAS QwertycoinFramework_CryptoNoteProtocol)
 target_include_directories(QwertycoinFramework_CryptoNoteProtocol PRIVATE ${QwertycoinFramework_INCLUDE_DIRS})
+target_link_libraries(QwertycoinFramework_CryptoNoteProtocol PRIVATE ${QwertycoinFramework_CryptoNoteProtocol_LIBS})
+
+# QwertycoinFramework::Global
+
+set(QwertycoinFramework_Global_SOURCES
+    "${CMAKE_CURRENT_LIST_DIR}/Global/Checkpoints.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Global/Constants.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/Global/Constants.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Global/CryptoNoteConfig.h"
+)
+
+add_library(QwertycoinFramework_Global STATIC ${QwertycoinFramework_Global_SOURCES})
+add_library(QwertycoinFramework::Global ALIAS QwertycoinFramework_Global)
+target_include_directories(QwertycoinFramework_Global PRIVATE ${QwertycoinFramework_INCLUDE_DIRS})
 
 # QwertycoinFramework::Http
 
@@ -335,9 +395,14 @@ set(QwertycoinFramework_InProcessNode_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/InProcessNode/InProcessNodeErrors.h"
 )
 
+set(QwertycoinFramework_InProcessNode_LIBS
+    QwertycoinFramework::Global
+)
+
 add_library(QwertycoinFramework_InProcessNode STATIC ${QwertycoinFramework_InProcessNode_SOURCES})
 add_library(QwertycoinFramework::InProcessNode ALIAS QwertycoinFramework_InProcessNode)
 target_include_directories(QwertycoinFramework_InProcessNode PRIVATE ${QwertycoinFramework_INCLUDE_DIRS})
+target_link_libraries(QwertycoinFramework_InProcessNode PRIVATE ${QwertycoinFramework_InProcessNode_LIBS})
 
 # QwertycoinFramework::JsonRpcServer
 
@@ -412,6 +477,7 @@ set(QwertycoinFramework_NodeRpcProxy_SOURCES
 )
 
 set(QwertycoinFramework_NodeRpcProxy_LIBS
+    QwertycoinFramework::Global
     QwertycoinFramework::Http
     QwertycoinFramework::Rpc
     QwertycoinFramework::System
@@ -455,6 +521,7 @@ set(QwertycoinFramework_P2p_SOURCES
 set(QwertycoinFramework_P2p_LIBS
     MiniUPnP::miniupnpc
     QwertycoinFramework::CryptoNoteProtocol
+    QwertycoinFramework::Global
 )
 
 if(WIN32 AND MSVC)
@@ -515,6 +582,7 @@ set(QwertycoinFramework_Rpc_SOURCES
 set(QwertycoinFramework_Rpc_LIBS
     QwertycoinFramework::BlockchainExplorer
     QwertycoinFramework::CryptoNoteCore
+    QwertycoinFramework::Global
     QwertycoinFramework::P2p
     QwertycoinFramework::PaymentGate
     QwertycoinFramework::Serialization
@@ -720,10 +788,15 @@ set(QwertycoinFramework_Transfers_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/Transfers/TypeHelpers.h"
 )
 
+set(QwertycoinFramework_Transfers_LIBS
+    QwertycoinFramework::CryptoNoteCore
+    QwertycoinFramework::Global
+)
+
 add_library(QwertycoinFramework_Transfers STATIC ${QwertycoinFramework_Transfers_SOURCES})
 add_library(QwertycoinFramework::Transfers ALIAS QwertycoinFramework_Transfers)
 target_include_directories(QwertycoinFramework_Transfers PRIVATE ${QwertycoinFramework_INCLUDE_DIRS})
-target_link_libraries(QwertycoinFramework_Transfers PRIVATE QwertycoinFramework::CryptoNoteCore)
+target_link_libraries(QwertycoinFramework_Transfers PRIVATE ${QwertycoinFramework_Transfers_LIBS})
 
 # QwertycoinFramework::Wallet
 
@@ -777,6 +850,7 @@ set(QwertycoinFramework_Wallet_LIBS
     QwertycoinFramework::Common
     QwertycoinFramework::Crypto
     QwertycoinFramework::CryptoNoteCore
+    QwertycoinFramework::Global
     QwertycoinFramework::Logging
     QwertycoinFramework::Mnemonics
     QwertycoinFramework::Rpc

@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2014-2018, The Forknote project
 // Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -27,14 +27,14 @@
 #include <CryptoNoteCore/Currency.h>
 #include <CryptoNoteCore/VerificationContext.h>
 #include <CryptoNoteProtocol/CryptoNoteProtocolHandler.h>
+#include <Global/Constants.h>
+#include <Global/CryptoNoteConfig.h>
 #include <P2p/LevinProtocol.h>
 #include <System/Dispatcher.h>
-#include "../src/config/Ascii.h"
-#include "../src/config/CryptoNoteConfig.h"
-#include "../src/config/WalletConfig.h"
 
 using namespace Logging;
 using namespace Common;
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 
@@ -53,7 +53,7 @@ void relay_post_notify(IP2pEndpoint &p2p,
                        typename t_parametr::request &arg,
                        const net_connection_id *excludeConnection = nullptr)
 {
-    p2p.relay_notify_to_all(t_parametr::ID, LevinProtocol::encode(arg), excludeConnection);
+    p2p.externalRelayNotifyToAll(t_parametr::ID, LevinProtocol::encode(arg), excludeConnection);
 }
 
 } // namespace
@@ -184,16 +184,16 @@ uint32_t CryptoNoteProtocolHandler::get_current_blockchain_height()
 bool CryptoNoteProtocolHandler::process_payload_sync_data(
     const CORE_SYNC_DATA &hshd,
     CryptoNoteConnectionContext &context,
-    bool is_inital)
+    bool is_initial)
 {
-    if (context.m_state == CryptoNoteConnectionContext::state_befor_handshake && !is_inital) {
+    if (context.m_state == CryptoNoteConnectionContext::state_befor_handshake && !is_initial) {
         return true;
     }
 
     if (context.m_state == CryptoNoteConnectionContext::state_synchronizing) {
         // do nothing
     } else if (m_core.have_block(hshd.top_id)) {
-        if (is_inital) {
+        if (is_initial) {
             on_connection_synchronized();
             context.m_state = CryptoNoteConnectionContext::state_pool_sync_required;
         } else {
@@ -204,7 +204,7 @@ bool CryptoNoteProtocolHandler::process_payload_sync_data(
                        - static_cast<int64_t>(get_current_blockchain_height());
 
         logger(
-            diff >= 0 ? (is_inital ? Logging::INFO : Logging::DEBUGGING)
+            diff >= 0 ? (is_initial ? Logging::INFO : Logging::DEBUGGING)
                       : Logging::TRACE, Logging::BRIGHT_YELLOW
         )   << context
             << "Sync data returned unknown top block: " << get_current_blockchain_height()
@@ -228,7 +228,7 @@ bool CryptoNoteProtocolHandler::process_payload_sync_data(
     updateObservedHeight(hshd.current_height, context);
     context.m_remote_blockchain_height = hshd.current_height;
 
-    if (is_inital) {
+    if (is_initial) {
         m_peersCount++;
         m_observerManager.notify(&ICryptoNoteProtocolObserver::peerCountUpdated,
                                  m_peersCount.load());
@@ -411,6 +411,27 @@ int CryptoNoteProtocolHandler::handle_request_get_objects(
     CryptoNoteConnectionContext &context)
 {
     logger(Logging::TRACE) << context << "NOTIFY_REQUEST_GET_OBJECTS";
+
+    // Essentially, one can send such a large amount of IDs that core exhausts
+    // all free memory. This issue can theoretically be exploited using very
+    // large CN blockchains, such as Monero.
+    //
+    // This is a partial fix. Thanks and credit given to CryptoNote author
+    // 'cryptozoidberg' for collaboration and the fix. Also thanks to
+    // 'moneromooo'. Referencing HackerOne report #506595.
+    //
+    // Thanks to aivve (Karbo)
+
+    if (arg.blocks.size() + arg.txs.size() > CURRENCY_PROTOCOL_MAX_OBJECT_REQUEST_COUNT) {
+        logger(Logging::ERROR)
+            << context
+            << "Requested objects count is too big ("
+            << arg.blocks.size() << ") expected not more then "
+            << CURRENCY_PROTOCOL_MAX_OBJECT_REQUEST_COUNT;
+        m_p2p->drop_connection(context, true);
+        return 1;
+    }
+
     NOTIFY_RESPONSE_GET_OBJECTS::request rsp;
     if (!m_core.handle_get_objects(arg, rsp)) {
         logger(Logging::ERROR)
@@ -714,7 +735,7 @@ bool CryptoNoteProtocolHandler::on_connection_synchronized()
         logger(INFO, WHITE) << " If you need more assistance, you can contact us for support at " + WalletConfig::contactLink << ENDL;
         logger(INFO, BRIGHT_MAGENTA) << "===================================================" << ENDL << ENDL ;
 
-        logger(INFO, BRIGHT_GREEN) << asciiArt << ENDL;
+        logger(INFO, BRIGHT_GREEN) << Constants::asciiArt << ENDL;
         m_core.on_synchronized();
 
         uint32_t height;
@@ -807,19 +828,19 @@ int CryptoNoteProtocolHandler::handleRequestTxPool(int command,
 void CryptoNoteProtocolHandler::relay_block(NOTIFY_NEW_BLOCK::request &arg)
 {
     auto buf = LevinProtocol::encode(arg);
-    m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_BLOCK::ID, buf);
+    m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_BLOCK::ID, buf, nullptr);
 }
 
 void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::request &arg)
 {
     auto buf = LevinProtocol::encode(arg);
-    m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf);
+    m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf, nullptr);
 }
 
 void CryptoNoteProtocolHandler::requestMissingPoolTransactions(
     const CryptoNoteConnectionContext &context)
 {
-    if (context.version < P2PProtocolVersion::V1) {
+    if (context.version < 1) {
         return;
     }
 

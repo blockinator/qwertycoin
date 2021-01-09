@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018-2019, Karbo developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -21,6 +21,7 @@
 
 #include <queue>
 #include <unordered_map>
+#include <Global/CryptoNoteConfig.h>
 #include <Logging/LoggerRef.h>
 #include <System/Dispatcher.h>
 #include <System/Event.h>
@@ -29,7 +30,6 @@
 #include <Wallet/IFusionManager.h>
 #include <Wallet/IWallet.h>
 #include <Wallet/WalletIndices.h>
-#include <../src/config/CryptoNoteConfig.h>
 
 namespace CryptoNote {
 
@@ -566,7 +566,7 @@ private:
 
     bool m_blockchainSynchronizerStarted;
     BlockchainSynchronizer m_blockchainSynchronizer;
-    TransfersSyncronizer m_synchronizer;
+    TransfersSynchronizer m_synchronizer;
 
     System::Event m_eventOccurred;
     std::queue<WalletEvent> m_events;

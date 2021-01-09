@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers, The Karbowanec developers
+// Copyright (c) 2018-2019, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -19,7 +20,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <../src/config/CryptoNoteConfig.h>
+#include <Global/CryptoNoteConfig.h>
 
 #pragma once
 
@@ -29,7 +30,7 @@ namespace {
 
 boost::uuids::uuid name;
 boost::uuids::name_generator gen(name);
-boost::uuids::uuid u = gen(GENESIS_COINBASE_TX_FIX);
+boost::uuids::uuid u = gen("013c01ff0001ffffffffffff07029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd0880712101eddf1e272c1ffa70f49ca4eaad918578bc3b59689e53e48a1bc670fbdea08478.5.1.2");
 
 } // namespace
 

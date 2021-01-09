@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -85,10 +85,12 @@ private:
     bool start_mining(const std::vector<std::string> &args);
     bool stop_mining(const std::vector<std::string> &args);
     bool print_diff(const std::vector<std::string> &args);
+    bool print_diff_stat(const std::vector<std::string> &args);
     bool print_ban(const std::vector<std::string> &args);
     bool ban(const std::vector<std::string> &args);
     bool unban(const std::vector<std::string> &args);
     bool status(const std::vector<std::string> &args);
+    bool generate_blocks(const std::vector<std::string> &args);
 
 private:
     Common::ConsoleHandler m_consoleHandler;

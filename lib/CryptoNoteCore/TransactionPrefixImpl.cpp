@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -23,8 +23,10 @@
 #include <CryptoNoteCore/ITransaction.h>
 #include <CryptoNoteCore/TransactionApiExtra.h>
 #include <CryptoNoteCore/TransactionUtils.h>
+#include <Global/Constants.h>
 
 using namespace Crypto;
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 

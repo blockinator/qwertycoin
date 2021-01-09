@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -19,9 +19,9 @@
 #pragma once
 
 #include <crypto/crypto.h>
-#include <../src/config/CryptoNoteConfig.h>
 #include <CryptoNoteCore/CryptoNoteStatInfo.h>
 #include <CryptoNoteCore/CryptoNoteSerialization.h>
+#include <Global/CryptoNoteConfig.h>
 #include <P2p/P2pProtocolTypes.h>
 #include <Serialization/ISerializer.h>
 #include <Serialization/SerializationOverloads.h>
@@ -51,13 +51,6 @@ struct network_config
     uint32_t packet_max_size;
     uint32_t config_id;
     uint32_t send_peerlist_sz;
-};
-
-enum P2PProtocolVersion : uint8_t
-{
-    V0 = 0,
-    V1 = 1,
-    CURRENT = V1
 };
 
 struct basic_node_data

@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -157,7 +157,9 @@ public:
         uint64_t alreadyGeneratedCoins,
         uint64_t fee,
         uint64_t &reward,
-        int64_t &emissionChange) = 0;
+        int64_t &emissionChange,
+        uint32_t height,
+        uint64_t blockTarget) = 0;
     virtual bool scanOutputkeysForIndices(
         const KeyInput &txInToKey,
         std::list<std::pair<Crypto::Hash, size_t>> &outputReferences) = 0;
@@ -194,6 +196,7 @@ public:
         const Crypto::Hash &paymentId) = 0;
     virtual uint64_t getMinimalFeeForHeight(uint32_t height) = 0;
     virtual uint64_t getMinimalFee() = 0;
+    virtual uint64_t getBlockTimestamp(uint32_t height) = 0;
 
     virtual uint32_t get_current_blockchain_height() = 0;
     virtual uint8_t getBlockMajorVersionForHeight(uint32_t height) = 0;

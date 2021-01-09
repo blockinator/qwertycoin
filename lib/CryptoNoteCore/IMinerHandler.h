@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -32,6 +32,28 @@ struct IMinerHandler
         difficulty_type &diffic,
         uint32_t &height,
         const BinaryArray &ex_nonce) = 0;
+
+    enum stat_period
+    {
+        hour,
+        day,
+        week,
+        month,
+        halfyear,
+        year,
+        by_block_number
+    };
+
+    virtual bool get_difficulty_stat(
+            uint32_t height,
+            stat_period period,
+            uint32_t &block_num,
+            uint64_t &avg_solve_time,
+            uint64_t &stddev_solve_time,
+            uint32_t &outliers_num,
+            difficulty_type &avg_diff,
+            difficulty_type &min_diff,
+            difficulty_type &max_diff) = 0;
 
 protected:
     ~IMinerHandler() = default;

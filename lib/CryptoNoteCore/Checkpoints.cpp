@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2018, The TurtleCoin developers
 // Copyright (c) 2018, The Karbo developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -31,9 +31,11 @@
 #include <Common/DnsTools.h>
 #include <Common/StringTools.h>
 #include <CryptoNoteCore/Checkpoints.h>
-#include "../src/config/CryptoNoteConfig.h" // TODO: Replace relative include path.
+#include <Global/Constants.h>
+#include <Global/CryptoNoteConfig.h>
 
 using namespace Logging;
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 
@@ -167,7 +169,7 @@ std::vector<uint32_t> Checkpoints::getCheckpointHeights() const
 #ifndef __ANDROID__
 bool Checkpoints::load_checkpoints_from_dns()
 {
-    std::string domain("checkpoints.qwertycoin.org");
+    std::string domain(CryptoNote::DNS_CHECKPOINTS_HOST);
     std::vector<std::string>records;
 
     logger(Logging::DEBUGGING) << "Fetching DNS checkpoint records from " << domain;

@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -90,7 +90,7 @@ void SplitPath(const std::string &path, std::string &directory, std::string &fil
 
 std::string CombinePath(const std::string &path1, const std::string &path2)
 {
-    return path1 + GENERIC_PATH_SEPARATOR + path2;
+    return path1.empty() ? path2 : path1 + GENERIC_PATH_SEPARATOR + path2;
 }
 
 std::string ReplaceExtenstion(const std::string &path, const std::string &extension)

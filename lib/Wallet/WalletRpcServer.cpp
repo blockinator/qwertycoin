@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2014-2016, XDN developers
 // Copyright (c) 2014-2016, The Monero Project
 // Copyright (c) 2016-2018, Karbo developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -29,6 +29,7 @@
 #include <CryptoNoteCore/CryptoNoteFormatUtils.h>
 #include <CryptoNoteCore/CryptoNoteBasicImpl.h>
 #include <CryptoNoteCore/Account.h>
+#include <Global/Constants.h>
 #include <Rpc/JsonRpc.h>
 #include <Wallet/WalletRpcServer.h>
 #include <WalletLegacy/WalletHelper.h>
@@ -140,7 +141,8 @@ void wallet_rpc_server::processRequest(const CryptoNote::HttpRequest &request,
             { "transfer"         , makeMemberMethod(&wallet_rpc_server::on_transfer)          },
             { "store"            , makeMemberMethod(&wallet_rpc_server::on_store)             },
             { "stop_wallet"      , makeMemberMethod(&wallet_rpc_server::on_stop_wallet)       },
-            { "reset"            , makeMemberMethod(&wallet_rpc_server::on_reset)             },
+            { "rescan"           , makeMemberMethod(&wallet_rpc_server::on_rescan)            },
+            { "purge"            , makeMemberMethod(&wallet_rpc_server::on_purge)             },
             { "get_payments"     , makeMemberMethod(&wallet_rpc_server::on_get_payments)      },
             { "get_messages"	 , makeMemberMethod(&wallet_rpc_server::on_get_messages)	  },
             { "get_transfers"    , makeMemberMethod(&wallet_rpc_server::on_get_transfers)     },
@@ -567,11 +569,20 @@ bool wallet_rpc_server::on_query_key(
     return true;
 }
 
-bool wallet_rpc_server::on_reset(
-    const wallet_rpc::COMMAND_RPC_RESET::request &req,
-    wallet_rpc::COMMAND_RPC_RESET::response &res)
+bool wallet_rpc_server::on_rescan(
+    const wallet_rpc::COMMAND_RPC_RESCAN::request &req,
+    wallet_rpc::COMMAND_RPC_RESCAN::response &res)
 {
-    m_wallet.reset();
+    m_wallet.rescan();
+
+    return true;
+}
+
+bool wallet_rpc_server::on_purge(
+    const wallet_rpc::COMMAND_RPC_PURGE::request &req,
+    wallet_rpc::COMMAND_RPC_PURGE::response &res)
+{
+    m_wallet.purge();
 
     return true;
 }

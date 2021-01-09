@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -21,7 +21,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <Common/Util.h>
-#include <../src/config/CryptoNoteConfig.h>
+#include <Global/CryptoNoteConfig.h>
 
 #ifdef _WIN32
 #include <windows.h>

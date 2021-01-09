@@ -1,7 +1,8 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers, The Monero developers
+// Copyright (c) 2018-2019, The Monero developers
 // Copyright (c) 2018, Ryo Currency Project
 // Copyright (c) 2016-2018, The Karbo developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -21,6 +22,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <iterator>
+#include <limits>
 #include <numeric>
 #include <boost/foreach.hpp>
 #include <Common/Math.h>
@@ -31,11 +34,13 @@
 #include <CryptoNoteCore/Blockchain.h>
 #include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/TransactionExtra.h>
+#include <Global/Constants.h>
 #include <Rpc/CoreRpcServerCommandsDefinitions.h>
 #include <Serialization/BinarySerializationTools.h>
 
 using namespace Logging;
 using namespace Common;
+using namespace Qwertycoin;
 
 namespace {
 
@@ -361,7 +366,6 @@ Blockchain::Blockchain(
       m_currency(currency),
       m_tx_pool(tx_pool),
       m_current_block_cumul_sz_limit(0),
-      m_is_in_checkpoint_zone(false),
       m_upgradeDetectorV2(currency, m_blocks, BLOCK_MAJOR_VERSION_2, logger),
       m_upgradeDetectorV3(currency, m_blocks, BLOCK_MAJOR_VERSION_3, logger),
       m_upgradeDetectorV4(currency, m_blocks, BLOCK_MAJOR_VERSION_4, logger),
@@ -371,7 +375,7 @@ Blockchain::Blockchain(
       m_paymentIdIndex(blockchainIndexesEnabled),
       m_timestampIndex(blockchainIndexesEnabled),
       m_generatedTransactionsIndex(blockchainIndexesEnabled),
-      m_orthanBlocksIndex(blockchainIndexesEnabled),
+      m_orphanBlocksIndex(blockchainIndexesEnabled),
       m_blockchainIndexesEnabled(blockchainIndexesEnabled)
 {
     m_outputs.set_deleted_key(0);
@@ -620,7 +624,7 @@ bool Blockchain::init(const std::string &config_folder, bool load_existing)
     logger(INFO, BRIGHT_GREEN)
         << "Blockchain initialized. last block: " << m_blocks.size() - 1 << ", "
         << Common::timeIntervalToString(timestamp_diff)
-        << " time ago, current difficulty: " << getDifficultyForNextBlock();
+        << " time ago, current difficulty: " << getDifficultyForNextBlock(0);
 
     return true;
 }
@@ -714,7 +718,7 @@ bool Blockchain::resetAndSetGenesisBlock(const Block &b)
     m_paymentIdIndex.clear();
     m_timestampIndex.clear();
     m_generatedTransactionsIndex.clear();
-    m_orthanBlocksIndex.clear();
+    m_orphanBlocksIndex.clear();
 
     block_verification_context bvc = boost::value_initialized<block_verification_context>();
     addNewBlock(b, bvc);
@@ -819,7 +823,7 @@ bool Blockchain::getBlockHeight(const Crypto::Hash &blockId, uint32_t &blockHeig
     return m_blockIndex.getBlockHeight(blockId, blockHeight);
 }
 
-difficulty_type Blockchain::getDifficultyForNextBlock()
+difficulty_type Blockchain::getDifficultyForNextBlock(uint64_t nextBlockTime)
 {
     std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
     std::vector<uint64_t> timestamps;
@@ -838,12 +842,129 @@ difficulty_type Blockchain::getDifficultyForNextBlock()
         timestamps.push_back(m_blocks[offset].bl.timestamp);
         cumulative_difficulties.push_back(m_blocks[offset].cumulative_difficulty);
     }
+    CryptoNote::Currency::lazy_stat_callback_type cb([&](IMinerHandler::stat_period p, uint64_t next_time)
+    {
+        uint32_t min_height = CryptoNote::parameters::UPGRADE_HEIGHT_V6 +
+                CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY / 24;
+        uint64_t time_window = 0;
+        switch (p) {
+        case(IMinerHandler::stat_period::hour):
+            time_window = 3600;
+            break;
+        case(IMinerHandler::stat_period::day):
+            time_window = 3600 * 24;
+            break;
+        case(IMinerHandler::stat_period::week):
+            time_window = 3600 * 24 * 7;
+            break;
+        case(IMinerHandler::stat_period::month):
+            time_window = 3600 * 24 * 30;
+            break;
+        case(IMinerHandler::stat_period::halfyear):
+            time_window = 3600 * 12 * 365;
+            break;
+        case(IMinerHandler::stat_period::year):
+            time_window = 3600 * 24 * 365;
+            break;
+        }
+        assert(next_time > time_window);
+        uint64_t stop_time = next_time - time_window;
+        if (m_blocks[min_height].bl.timestamp >= stop_time)
+            return difficulty_type(0);
+        uint32_t height = m_blocks.back().height;
+        std::vector<difficulty_type> diffs;
+        while (height > min_height && m_blocks[height - 1].bl.timestamp >= stop_time)
+        {
+            diffs.push_back(m_blocks[height].cumulative_difficulty - m_blocks[height - 1].cumulative_difficulty);
+            height--;
+        }
+        return static_cast<difficulty_type>(Common::meanValue(diffs));
+    });
     return m_currency.nextDifficulty(
         static_cast<uint32_t>(m_blocks.size()),
         BlockMajorVersion,
         timestamps,
-        cumulative_difficulties
-    );
+        cumulative_difficulties,
+        nextBlockTime, cb);
+}
+
+bool Blockchain::getDifficultyStat(uint32_t height,
+                                   IMinerHandler::stat_period period,
+                                   uint32_t& block_num,
+                                   uint64_t& avg_solve_time,
+                                   uint64_t& stddev_solve_time,
+                                   uint32_t& outliers_num,
+                                   difficulty_type& avg_diff,
+                                   difficulty_type& min_diff,
+                                   difficulty_type& max_diff)
+{
+    uint32_t min_height = CryptoNote::parameters::UPGRADE_HEIGHT_V6 +
+            CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY / 24;
+    if (height < min_height) {
+        logger (WARNING) << "Can't get difficulty stat for height less than " <<
+                            CryptoNote::parameters::UPGRADE_HEIGHT_V6 +
+                            CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY / 24;
+        return false;
+    }
+    uint64_t time_window = 0;
+    switch (period) {
+    case(IMinerHandler::stat_period::hour):
+        time_window = 3600;
+        break;
+    case(IMinerHandler::stat_period::day):
+        time_window = 3600 * 24;
+        break;
+    case(IMinerHandler::stat_period::week):
+        time_window = 3600 * 24 * 7;
+        break;
+    case(IMinerHandler::stat_period::month):
+        time_window = 3600 * 24 * 30;
+        break;
+    case(IMinerHandler::stat_period::halfyear):
+        time_window = 3600 * 12 * 365;
+        break;
+    case(IMinerHandler::stat_period::year):
+        time_window = 3600 * 24 * 365;
+        break;
+    case(IMinerHandler::stat_period::by_block_number):
+        time_window = std::numeric_limits<uint64_t>::max();
+        uint32_t new_min_height = (height > block_num) ? height - block_num : 0;
+        min_height = std::max(min_height, new_min_height);
+        break;
+    }
+    std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+    if (height >= m_blocks.size()) {
+        logger (ERROR) << "Invalid height " << height << ", " << m_blocks.size() << " blocks available";
+        throw std::runtime_error("Invalid height");
+    }
+    uint64_t stop_time = (m_blocks[height].bl.timestamp > time_window) ? m_blocks[height].bl.timestamp - time_window : 0;
+    std::vector<uint64_t> solve_times;
+    std::vector<difficulty_type> difficulties;
+    min_diff = std::numeric_limits<difficulty_type>::max();
+    max_diff = 0;
+    while (height > min_height && m_blocks[height - 1].bl.timestamp >= stop_time)
+    {
+        solve_times.push_back(m_blocks[height].bl.timestamp - m_blocks[height - 1].bl.timestamp);
+        difficulty_type diff = m_blocks[height].cumulative_difficulty - m_blocks[height - 1].cumulative_difficulty;
+        difficulties.push_back(diff);
+        if (diff < min_diff)
+            min_diff = diff;
+        if (diff > max_diff)
+            max_diff = diff;
+        height--;
+    }
+    block_num = solve_times.size();
+    avg_solve_time = Common::meanValue(solve_times);
+    stddev_solve_time = Common::stddevValue(solve_times);
+    outliers_num = 0;
+    for(auto st: solve_times)
+    {
+        if (((stddev_solve_time < avg_solve_time) && (st < avg_solve_time - stddev_solve_time)) ||
+            (st > avg_solve_time + stddev_solve_time))
+            outliers_num++;
+    }
+    avg_diff = Common::meanValue(difficulties);
+    return true;
 }
 
 difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, size_t window)
@@ -1126,13 +1247,13 @@ bool Blockchain::switch_to_alternative_blockchain(
             logger(INFO, BRIGHT_WHITE)
                 << "The block was inserted as invalid while connecting new alternative chain,"
                 << " block_id: " << get_block_hash(ch_ent->second.bl);
-            m_orthanBlocksIndex.remove(ch_ent->second.bl);
+            m_orphanBlocksIndex.remove(ch_ent->second.bl);
             m_alternative_chains.erase(ch_ent);
 
             for (auto alt_ch_to_orph_iter = ++alt_ch_iter;
                  alt_ch_to_orph_iter != alt_chain.end();
                  alt_ch_to_orph_iter++) {
-                m_orthanBlocksIndex.remove((*alt_ch_to_orph_iter)->second.bl);
+                m_orphanBlocksIndex.remove((*alt_ch_to_orph_iter)->second.bl);
                 m_alternative_chains.erase(*alt_ch_to_orph_iter);
             }
 
@@ -1160,7 +1281,7 @@ bool Blockchain::switch_to_alternative_blockchain(
     // removing all_chain entries from alternative chain
     for (auto ch_ent : alt_chain) {
         blocksFromCommonRoot.push_back(get_block_hash(ch_ent->second.bl));
-        m_orthanBlocksIndex.remove(ch_ent->second.bl);
+        m_orphanBlocksIndex.remove(ch_ent->second.bl);
         m_alternative_chains.erase(ch_ent);
     }
 
@@ -1176,7 +1297,7 @@ bool Blockchain::switch_to_alternative_blockchain(
 // This function calculates the difficulty target for the block being added to an alternate chain.
 difficulty_type Blockchain::get_next_difficulty_for_alternative_chain(
     const std::list<blocks_ext_by_hash::iterator> &alt_chain,
-    BlockEntry &bei)
+    BlockEntry &bei, uint64_t nextBlockTime)
 {
     std::vector<uint64_t> timestamps;
     std::vector<difficulty_type> cumulative_difficulties;
@@ -1246,7 +1367,67 @@ difficulty_type Blockchain::get_next_difficulty_for_alternative_chain(
         }
     }
 
-    return m_currency.nextDifficulty(static_cast<uint32_t>(m_blocks.size()), BlockMajorVersion, timestamps, cumulative_difficulties);
+    CryptoNote::Currency::lazy_stat_callback_type cb([&](IMinerHandler::stat_period p, uint64_t next_time)
+    {
+        uint32_t min_height = CryptoNote::parameters::UPGRADE_HEIGHT_V6 +
+                CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY / 24;
+        uint64_t time_window = 0;
+        switch (p) {
+        case(IMinerHandler::stat_period::hour):
+            time_window = 3600;
+            break;
+        case(IMinerHandler::stat_period::day):
+            time_window = 3600 * 24;
+            break;
+        case(IMinerHandler::stat_period::week):
+            time_window = 3600 * 24 * 7;
+            break;
+        case(IMinerHandler::stat_period::month):
+            time_window = 3600 * 24 * 30;
+            break;
+        case(IMinerHandler::stat_period::halfyear):
+            time_window = 3600 * 12 * 365;
+            break;
+        case(IMinerHandler::stat_period::year):
+            time_window = 3600 * 24 * 365;
+            break;
+        }
+        assert(next_time > time_window);
+        uint64_t stop_time = next_time - time_window;
+        if (m_blocks[min_height].bl.timestamp >= stop_time)
+            return difficulty_type(0);
+        std::vector<difficulty_type> diffs;
+        uint32_t height = bei.height;
+        if (!alt_chain.empty()) {
+            auto alt_it = alt_chain.rbegin();
+            auto next_alt_it = std::next(alt_it);
+            while (height > min_height &&
+                   next_alt_it != alt_chain.rend() &&
+                   (*next_alt_it)->second.bl.timestamp >= stop_time)
+            {
+                diffs.push_back((*alt_it)->second.cumulative_difficulty - (*next_alt_it)->second.cumulative_difficulty);
+                alt_it = next_alt_it;
+                next_alt_it = std::next(alt_it);
+                height--;
+            }
+            if (alt_chain.front()->second.bl.timestamp >= stop_time) {
+                // not enough blocks in alt chain,  continue on main chain
+                while (height > min_height && m_blocks[height - 1].bl.timestamp >= stop_time)
+                {
+                    diffs.push_back(m_blocks[height].cumulative_difficulty - m_blocks[height - 1].cumulative_difficulty);
+                    height--;
+                }
+            }
+        } else {
+            while (height > min_height && m_blocks[height - 1].bl.timestamp >= stop_time)
+            {
+                diffs.push_back(m_blocks[height].cumulative_difficulty - m_blocks[height - 1].cumulative_difficulty);
+                height--;
+            }
+        }
+        return static_cast<difficulty_type>(Common::meanValue(diffs));
+    });
+    return m_currency.nextDifficulty(static_cast<uint32_t>(m_blocks.size()), BlockMajorVersion, timestamps, cumulative_difficulties, nextBlockTime, cb);
 }
 
 bool Blockchain::prevalidate_miner_transaction(const Block &b, uint32_t height)
@@ -1312,15 +1493,32 @@ bool Blockchain::validate_miner_transaction(
     get_last_n_blocks_sizes(lastBlocksSizes, m_currency.rewardBlocksWindow());
     size_t blocksSizeMedian = Common::medianValue(lastBlocksSizes);
 
-    auto blockMajorVersion = getBlockMajorVersionForHeight(height);
+    uint32_t previousBlockHeight = 0;
+    uint64_t blockTarget = CryptoNote::parameters::DIFFICULTY_TARGET;
+
+    if (height >= CryptoNote::parameters::UPGRADE_HEIGHT_V6) {
+        getBlockHeight(b.previousBlockHash, previousBlockHeight);
+        blockTarget = b.timestamp - getBlockTimestamp(previousBlockHeight);
+    }
+
+    if (m_currency.isGovernanceEnabled(height)) {
+        if (!m_currency.validate_government_fee(b.baseTransaction)) {
+            logger(INFO, BRIGHT_WHITE)
+                << "Invalid government fee";
+            return false;
+        }
+    }
+
     auto br = m_currency.getBlockReward(
-        blockMajorVersion,
+        getBlockMajorVersionForHeight(height),
         blocksSizeMedian,
         cumulativeBlockSize,
         alreadyGeneratedCoins,
         fee,
         reward,
-        emissionChange
+        emissionChange,
+        height,
+        blockTarget
     );
     if (!br) {
         logger(INFO, BRIGHT_WHITE)
@@ -1546,15 +1744,14 @@ bool Blockchain::handle_alternative_block(
             return false;
         }
 
-        // Always check PoW for alternative blocks
-        m_is_in_checkpoint_zone = false;
         // Check the block's hash against the difficulty target for its alt chain
-        difficulty_type current_diff = get_next_difficulty_for_alternative_chain(alt_chain, bei);
+        difficulty_type current_diff = get_next_difficulty_for_alternative_chain(alt_chain, bei, bei.bl.timestamp);
         if (!(current_diff)) {
             logger(ERROR, BRIGHT_RED) << "!!!!!!! DIFFICULTY OVERHEAD !!!!!!!";
             return false;
         }
         Crypto::Hash proof_of_work = NULL_HASH;
+        // Always check PoW for alternative blocks
         if (!m_currency.checkProofOfWork(m_cn_context, bei.bl, current_diff, proof_of_work)) {
             logger(INFO, BRIGHT_RED)
             << "Block with id: " << id << ENDL
@@ -1593,7 +1790,7 @@ bool Blockchain::handle_alternative_block(
             return false;
         }
 
-        m_orthanBlocksIndex.add(bei.bl);
+        m_orphanBlocksIndex.add(bei.bl);
 
         alt_chain.push_back(i_res.first);
 
@@ -2134,27 +2331,31 @@ bool Blockchain::checkTransactionInputs(
                 return false;
             }
 
-            if (!check_tx_input(
-                    in_to_key,
-                    tx_prefix_hash,
-                    tx.signatures[inputIndex],
-                    pmax_used_block_height
-                )) {
-                logger(INFO, BRIGHT_WHITE)
-                    << "Failed to check ring signature for tx "
-                    << transactionHash;
-                return false;
+            if (!isInCheckpointZone(getCurrentBlockchainHeight())) {
+                if (!check_tx_input(
+                        in_to_key,
+                        tx_prefix_hash,
+                        tx.signatures[inputIndex],
+                        pmax_used_block_height
+                    )) {
+                    logger(INFO, BRIGHT_WHITE)
+                        << "Failed to check input in transaction "
+                        << transactionHash;
+                    return false;
+                }
             }
 
             ++inputIndex;
         } else if (txin.type() == typeid(MultisignatureInput)) {
-            if (!validateInput(
-                    ::boost::get<MultisignatureInput>(txin),
-                    transactionHash,
-                    tx_prefix_hash,
-                    tx.signatures[inputIndex]
-                )) {
-                return false;
+            if (!isInCheckpointZone(getCurrentBlockchainHeight())) {
+                if (!validateInput(
+                        ::boost::get<MultisignatureInput>(txin),
+                        transactionHash,
+                        tx_prefix_hash,
+                        tx.signatures[inputIndex]
+                    )) {
+                    return false;
+                }
             }
             ++inputIndex;
         } else {
@@ -2286,7 +2487,7 @@ bool Blockchain::check_tx_input(
             << " mismatch with outputs keys count for inputs=" << output_keys.size();
         return false;
     }
-    if (m_is_in_checkpoint_zone) {
+    if (isInCheckpointZone(getCurrentBlockchainHeight())) {
         return true;
     }
 
@@ -2460,10 +2661,8 @@ bool Blockchain::update_next_cumulative_size_limit()
     return true;
 }
 
-bool Blockchain::addNewBlock(const Block &bl_, block_verification_context &bvc)
+bool Blockchain::addNewBlock(const Block &bl, block_verification_context &bvc)
 {
-    // copy block here to let modify block.target
-    Block bl = bl_;
     Crypto::Hash id;
     if (!get_block_hash(bl, id)) {
         logger(ERROR, BRIGHT_RED) << "Failed to get block hash, possible block has invalid format";
@@ -2584,7 +2783,7 @@ bool Blockchain::pushBlock(
     }
 
     auto targetTimeStart = std::chrono::steady_clock::now();
-    difficulty_type currentDifficulty = getDifficultyForNextBlock();
+    difficulty_type currentDifficulty = getDifficultyForNextBlock(blockData.timestamp);
     auto target_calculating_time = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - targetTimeStart
     ).count();
@@ -3268,7 +3467,7 @@ bool Blockchain::getGeneratedTransactionsNumber(uint32_t height, uint64_t &gener
 bool Blockchain::getOrphanBlockIdsByHeight(uint32_t height, std::vector<Crypto::Hash> &blockHashes)
 {
     std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
-    return m_orthanBlocksIndex.find(height, blockHashes);
+    return m_orphanBlocksIndex.find(height, blockHashes);
 }
 
 bool Blockchain::getBlockIdsByTimestamp(

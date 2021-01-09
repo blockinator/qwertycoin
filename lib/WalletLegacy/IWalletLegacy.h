@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2014-2016, The Monero Project
 // Copyright (c) 2018, Karbo developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -29,10 +29,13 @@
 #include <boost/optional.hpp>
 #include <crypto/crypto.h>
 #include <CryptoNoteCore/CryptoNoteBasic.h>
+#include <Global/Constants.h>
 #include <Rpc/CoreRpcServerCommandsDefinitions.h>
 #include <CryptoNote.h>
 #include <CryptoTypes.h>
 #include <ITransfersContainer.h>
+
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 
@@ -75,7 +78,7 @@ struct WalletLegacyTransaction
     uint64_t sentTime;
     uint64_t unlockTime;
     Crypto::Hash hash;
-    boost::optional<Crypto::SecretKey> secretKey = CryptoNote::NULL_SECRET_KEY;
+    boost::optional<Crypto::SecretKey> secretKey = NULL_SECRET_KEY;
     bool isCoinbase;
     uint32_t blockHeight;
     uint64_t timestamp;
@@ -129,7 +132,8 @@ public:
     virtual void initAndLoad(std::istream &source, const std::string &password) = 0;
     virtual void initWithKeys(const AccountKeys &accountKeys, const std::string &password) = 0;
     virtual void shutdown() = 0;
-    virtual void reset() = 0;
+    virtual void rescan() = 0;
+    virtual void purge() = 0;
 
     virtual void save(std::ostream &destination, bool saveDetailed = true, bool saveCache = true)=0;
 
@@ -146,6 +150,8 @@ public:
     virtual size_t getTransactionCount() = 0;
     virtual size_t getTransferCount() = 0;
     virtual size_t getUnlockedOutputsCount() = 0;
+
+    virtual std::list<TransactionOutputInformation> selectAllOldOutputs(uint32_t height) = 0;
 
     virtual TransactionId findTransactionByTransferId(TransferId transferId) = 0;
 
@@ -209,6 +215,12 @@ public:
         const std::string &signature) = 0;
 
     virtual bool isTrackingWallet() = 0;
+
+    virtual void setConsolidateHeight(uint32_t height, const Crypto::Hash &consolidateTx) = 0;
+    virtual uint32_t getConsolidateHeight() const = 0;
+    virtual Crypto::Hash getConsolidateTx() const = 0;
+
+    virtual void markTransactionSafe(const Crypto::Hash &transactionHash) = 0;
 };
 
 } // namespace CryptoNOte

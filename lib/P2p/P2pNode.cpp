@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -16,6 +16,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Qwertycoin.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <algorithm>
+#include <random>
 #include <boost/uuid/uuid_io.hpp>
 #include <Common/StdInputStream.h>
 #include <Common/StdOutputStream.h>
@@ -260,7 +262,8 @@ void P2pNode::connectPeers()
     // if white peer list is empty, get peers from seeds
     if (m_peerlist.get_white_peers_count() == 0 && !m_cfg.getSeedNodes().empty()) {
         auto seedNodes = m_cfg.getSeedNodes();
-        std::random_shuffle(seedNodes.begin(), seedNodes.end());
+        auto rng = std::default_random_engine{};
+        std::shuffle(std::begin(seedNodes), std::end(seedNodes), rng);
         for (const auto &seed : seedNodes) {
             auto conn = tryToConnectPeer(seed);
             if (conn != nullptr && fetchPeerList(std::move(conn))) {
@@ -454,6 +457,20 @@ bool P2pNode::fetchPeerList(ContextPtr connection)
             return false;
         }
 
+        if (response.node_data.version < CryptoNote::P2P_MINIMUM_VERSION) {
+            logger(ERROR)
+                << *connection
+                << "COMMAND_HANDSHAKE Failed, peer is wrong version: "
+                << std::to_string(response.node_data.version);
+            return false;
+        } else if ((response.node_data.version - CryptoNote::P2P_CURRENT_VERSION) >= CryptoNote::P2P_UPGRADE_WINDOW) {
+            logger(WARNING)
+                << *connection
+                << "COMMAND_HANDSHAKE Warning, your software may be out of date. Please visit: "
+                << CryptoNote::LATEST_VERSION_URL
+                << " for the latest version.";
+        }
+
         return handleRemotePeerList(response.local_peerlist, response.node_data.local_time);
     } catch (std::exception &e) {
         logger(INFO) << *connection << "Failed to obtain peer list: " << e.what();
@@ -504,7 +521,7 @@ basic_node_data P2pNode::getNodeData() const
 {
     basic_node_data nodeData;
     nodeData.network_id = m_cfg.getNetworkId();
-    nodeData.version = P2PProtocolVersion::CURRENT;
+    nodeData.version = CryptoNote::P2P_CURRENT_VERSION;
     nodeData.local_time = time(nullptr);
     nodeData.peer_id = m_myPeerId;
     nodeData.node_version = PROJECT_VERSION;
@@ -610,6 +627,15 @@ void P2pNode::handleNodeData(const basic_node_data &node, P2pContext &context)
     if (node.network_id != m_cfg.getNetworkId()) {
         std::ostringstream msg;
         msg << context << "COMMAND_HANDSHAKE Failed, wrong network!  (" << node.network_id << ")";
+        throw std::runtime_error(msg.str());
+    }
+
+    if (node.version < CryptoNote::P2P_MINIMUM_VERSION) {
+        std::ostringstream msg;
+        msg << context
+            << "COMMAND_HANDSHAKE Failed, peer is wrong version! ("
+            << std::to_string(node.version)
+            << ")";
         throw std::runtime_error(msg.str());
     }
 

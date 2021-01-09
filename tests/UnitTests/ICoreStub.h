@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -26,6 +26,7 @@
 #include "CryptoNoteCore/ICore.h"
 #include "CryptoNoteCore/ICoreObserver.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolDefinitions.h"
+#include <Global/CryptoNoteConfig.h>
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 
 class ICoreStub: public CryptoNote::ICore {
@@ -78,7 +79,7 @@ public:
   virtual bool getBlockSize(const Crypto::Hash& hash, size_t& size) override;
   virtual bool getAlreadyGeneratedCoins(const Crypto::Hash& hash, uint64_t& generatedCoins) override;
   virtual bool getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
-    uint64_t& reward, int64_t& emissionChange) override;
+    uint64_t& reward, int64_t& emissionChange, uint32_t height, uint64_t blockTarget = CryptoNote::parameters::DIFFICULTY_TARGET) override;
   virtual bool scanOutputkeysForIndices(const CryptoNote::KeyInput& txInToKey, std::list<std::pair<Crypto::Hash, size_t>>& outputReferences) override;
   virtual bool getBlockDifficulty(uint32_t height, CryptoNote::difficulty_type& difficulty) override;
   virtual bool getBlockCumulativeDifficulty(uint32_t height, CryptoNote::difficulty_type& difficulty) override;
@@ -100,6 +101,7 @@ public:
 
   virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
   virtual uint64_t getMinimalFee() override;
+  virtual uint64_t getBlockTimestamp(uint32_t height) override;
 
   virtual uint32_t get_current_blockchain_height() override;
   virtual uint8_t getBlockMajorVersionForHeight(uint32_t height) override;

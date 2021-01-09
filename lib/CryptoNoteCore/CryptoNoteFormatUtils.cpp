@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 // Copyright (c) 2018, Karbo developers
 //
 // This file is part of Qwertycoin.
@@ -19,6 +19,7 @@
 
 #include <set>
 #include <Common/Varint.h>
+#include <crypto/cn_slow_hash.hpp>
 #include <CryptoNoteCore/Account.h>
 #include <CryptoNoteCore/CryptoNoteBasicImpl.h>
 #include <CryptoNoteCore/CryptoNoteFormatUtils.h>
@@ -26,15 +27,16 @@
 #include <CryptoNoteCore/TransactionExtra.h>
 #include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/Currency.h>
+#include <Global/Constants.h>
+#include <Global/CryptoNoteConfig.h>
 #include <Logging/LoggerRef.h>
 #include <Serialization/BinaryOutputStreamSerializer.h>
 #include <Serialization/BinaryInputStreamSerializer.h>
-#include "../src/config/CryptoNoteConfig.h" // TODO: Replace with <> path.
-#include "../src/config/Constants.h" // TODO: Replace with <> path.
 
 using namespace Logging;
 using namespace Crypto;
 using namespace Common;
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 
@@ -663,14 +665,16 @@ bool get_block_longhash(cn_context &context, const Block &b, Hash &res)
     } else {
         return false;
     }
-    cn_slow_hash(context, bd.data(), bd.size(), res);
+    //cn_slow_hash(context, bd.data(), bd.size(), res);
     if(b.majorVersion == BLOCK_MAJOR_VERSION_4) {
         // heavy 4.0
-        cn_slow_hash(context, bd.data(), bd.size(), res);
+        cn_pow_hash_v2 cnh;
+        cnh.hash(bd.data(), bd.size(), res.data);
     } else {
-        // classic 1.0||2.0||3.0||5.0
-        cn_slow_hash(context, bd.data(), bd.size(), res);
+        cn_pow_hash_v1 cnh;
+        cnh.hash(bd.data(), bd.size(), res.data);
     }
+
     return true;
 }
 

@@ -2,7 +2,7 @@
 // Copyright (c) 2014 - 2017 XDN - project developers
 // Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018-2019 The Karbo developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -22,9 +22,9 @@
 #include <algorithm>
 #include <iostream>
 #include <boost/program_options.hpp>
+#include <Global/CryptoNoteConfig.h>
 #include <Logging/ILogger.h>
 #include <SimpleWallet/PasswordContainer.cpp>
-#include <config/CryptoNoteConfig.h>
 #include "PaymentServiceConfiguration.h"
 
 namespace po = boost::program_options;

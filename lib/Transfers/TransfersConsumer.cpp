@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2018, The BBSCoin Developers
 // Copyright (c) 2018, The Karbo Developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -24,6 +24,7 @@
 #include <Common/StringTools.h>
 #include <CryptoNoteCore/CryptoNoteFormatUtils.h>
 #include <CryptoNoteCore/TransactionApi.h>
+#include <Global/Constants.h>
 #include <Transfers/CommonTypes.h>
 #include <Transfers/TransfersConsumer.h>
 #include <Wallet/IWallet.h>
@@ -32,6 +33,7 @@
 using namespace Crypto;
 using namespace Logging;
 using namespace Common;
+using namespace Qwertycoin;
 
 std::unordered_set<Crypto::Hash> transactions_hash_seen;
 std::unordered_set<Crypto::PublicKey> public_keys_seen;
@@ -423,7 +425,14 @@ void TransfersConsumer::removeUnconfirmedTransaction(const Crypto::Hash& transac
         &IBlockchainConsumerObserver::onTransactionDeleteEnd,
         this,
         transactionHash
-    );
+                );
+}
+
+void TransfersConsumer::markTransactionSafe(const Hash &transactionHash)
+{
+    forEachSubscription([transactionHash](TransfersSubscription &sub) {
+        sub.markTransactionSafe(transactionHash);
+    });
 }
 
 void TransfersConsumer::addPublicKeysSeen(

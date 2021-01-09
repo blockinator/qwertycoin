@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -24,12 +24,14 @@
 #include <CryptoNoteCore/IBlock.h>
 #include <CryptoNoteCore/VerificationContext.h>
 #include <CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h>
+#include <Global/Constants.h>
+#include <Global/CryptoNoteConfig.h>
 #include <InProcessNode/InProcessNode.h>
 #include <InProcessNode/InProcessNodeErrors.h>
-#include <../src/config/CryptoNoteConfig.h>
 
 using namespace Crypto;
 using namespace Common;
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 
@@ -494,6 +496,12 @@ BlockHeaderInfo InProcessNode::getLastLocalBlockHeaderInfo() const
     return lastLocalBlockHeaderInfo;
 }
 
+uint32_t InProcessNode::getGRBHeight() const
+{
+    // stub, not implemented yet
+    return getLocalBlockCount();
+}
+
 void InProcessNode::peerCountUpdated(size_t count)
 {
     observerManager.notify(&INodeObserver::peerCountUpdated, count);
@@ -556,8 +564,8 @@ void InProcessNode::resetLastLocalBlockHeaderInfo()
     lastLocalBlockHeaderInfo.majorVersion = 0;
     lastLocalBlockHeaderInfo.minorVersion = 0;
     lastLocalBlockHeaderInfo.timestamp = 0;
-    lastLocalBlockHeaderInfo.hash = CryptoNote::NULL_HASH;
-    lastLocalBlockHeaderInfo.prevHash = CryptoNote::NULL_HASH;
+    lastLocalBlockHeaderInfo.hash = NULL_HASH;
+    lastLocalBlockHeaderInfo.prevHash = NULL_HASH;
     lastLocalBlockHeaderInfo.nonce = 0;
     lastLocalBlockHeaderInfo.isAlternative = false;
     lastLocalBlockHeaderInfo.depth = 0;

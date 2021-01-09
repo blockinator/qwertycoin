@@ -1,8 +1,9 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
-// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2019, The Iridium developers
+// Copyright (c) 2016-2019, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -417,10 +418,11 @@ void NodeServer::for_each_connection(std::function<void(CryptoNoteConnectionCont
     }
 }
 
-void NodeServer::externalRelayNotifyToAll(int command, const BinaryArray &data_buff)
+void NodeServer::externalRelayNotifyToAll(int command, const BinaryArray& data_buff,
+    const net_connection_id* excludeConnection)
 {
-    m_dispatcher.remoteSpawn([this, command, data_buff] {
-        relay_notify_to_all(command, data_buff, nullptr);
+    m_dispatcher.remoteSpawn([this, command, data_buff, excludeConnection] {
+        relay_notify_to_all(command, data_buff, excludeConnection);
     });
 }
 
@@ -661,7 +663,7 @@ bool NodeServer::init(const NetNodeConfig &config)
                                      System::Ipv4Address(m_bind_ip),
                                      static_cast<uint16_t>(m_listeningPort));
 
-    logger(INFO, BRIGHT_GREEN) << "Net service binded on " << m_bind_ip << ":" << m_listeningPort;
+    logger(INFO, BRIGHT_GREEN) << "Net service bound on " << m_bind_ip << ":" << m_listeningPort;
 
     if(m_external_port) {
         logger(INFO) << "External port defined as " << m_external_port;
@@ -759,7 +761,7 @@ bool NodeServer::handshake(CryptoNote::LevinProtocol &proto,
     m_payload_handler.get_payload_sync_data(arg.payload_data);
 
     if (!proto.invoke(COMMAND_HANDSHAKE::ID, arg, rsp)) {
-        logger(Logging::ERROR)
+        logger(Logging::DEBUGGING)
             << context
             << "Failed to invoke COMMAND_HANDSHAKE, closing connection.";
         return false;
@@ -768,7 +770,7 @@ bool NodeServer::handshake(CryptoNote::LevinProtocol &proto,
     context.version = rsp.node_data.version;
 
     if (rsp.node_data.network_id != m_network_id) {
-        logger(Logging::ERROR)
+        logger(Logging::DEBUGGING)
             << context
             << "COMMAND_HANDSHAKE Failed, wrong network!  ("
             << rsp.node_data.network_id
@@ -776,17 +778,33 @@ bool NodeServer::handshake(CryptoNote::LevinProtocol &proto,
         return false;
     }
 
-  if(!m_node_version.empty()) {
-    if (rsp.node_data.node_version != m_node_version) {
-      logger(Logging::ERROR) << context << "COMMAND_HANDSHAKE: invoked, but peer is not running the exclusive version specified, dropping connection!";
-      return false;
+    if(!m_node_version.empty()) {
+        if (rsp.node_data.node_version != m_node_version) {
+            logger(Logging::DEBUGGING,BRIGHT_RED)
+                << context
+                << "COMMAND_HANDSHAKE: invoked, but peer is not running the exclusive version specified, dropping connection!";
+            return false;
+        }
     }
-  }
 
+    if (rsp.node_data.version < CryptoNote::P2P_MINIMUM_VERSION) {
+        logger(Logging::DEBUGGING,BRIGHT_RED)
+            << context
+            << "COMMAND_HANDSHAKE Failed, peer is wrong version! ("
+            << std::to_string(rsp.node_data.version)
+            << "), closing connection.";
+        return false;
+    } else if ((rsp.node_data.version - CryptoNote::P2P_CURRENT_VERSION) >= CryptoNote::P2P_UPGRADE_WINDOW) {
+        logger(Logging::WARNING)
+            << context
+            << "COMMAND_HANDSHAKE Warning, your software may be out of date. Please visit: "
+            << CryptoNote::LATEST_VERSION_URL
+            << " for the latest version.";
+    }
 
     if (!handle_remote_peerlist(rsp.local_peerlist, rsp.node_data.local_time, context)) {
         add_host_fail(context.m_remote_ip);
-        logger(Logging::ERROR)
+        logger(Logging::DEBUGGING)
             << context
             << "COMMAND_HANDSHAKE: failed to handle_remote_peerlist(...), closing connection.";
         return false;
@@ -797,7 +815,7 @@ bool NodeServer::handshake(CryptoNote::LevinProtocol &proto,
     }
 
     if (!m_payload_handler.process_payload_sync_data(rsp.payload_data, context, true)) {
-        logger(Logging::ERROR)
+        logger(Logging::DEBUGGING)
             << context
             << "COMMAND_HANDSHAKE invoked, "
             << "but process_payload_sync_data returned false, "
@@ -844,7 +862,7 @@ bool NodeServer::handleTimedSyncResponse(const BinaryArray &in, P2pConnectionCon
     }
 
     if (!handle_remote_peerlist(rsp.local_peerlist, rsp.local_time, context)) {
-        logger(Logging::ERROR)
+        logger(Logging::DEBUGGING)
             << context
             << "COMMAND_TIMED_SYNC: failed to handle_remote_peerlist(...), closing connection.";
         return false;
@@ -1232,7 +1250,7 @@ bool NodeServer::handle_remote_peerlist(const std::list<PeerlistEntry> &peerlist
 
 bool NodeServer::get_local_node_data(basic_node_data &node_data)
 {
-    node_data.version = P2PProtocolVersion::CURRENT;
+    node_data.version = CryptoNote::P2P_CURRENT_VERSION;
     time_t local_time;
     time(&local_time);
     node_data.local_time = local_time;
@@ -1466,7 +1484,11 @@ int NodeServer::handle_handshake(int command,
     context.version = arg.node_data.version;
 
 	if (!is_remote_host_allowed(context.m_remote_ip)) {
-        logger(Logging::DEBUGGING) << context << "Banned node connected " << Common::ipAddressToString(context.m_remote_ip) << ", dropping connection.";
+        logger(Logging::DEBUGGING)
+            << context
+            << "Banned node connected "
+            << Common::ipAddressToString(context.m_remote_ip)
+            << ", dropping connection.";
         context.m_state = CryptoNoteConnectionContext::state_shutdown;
         return 1;
 	}
@@ -1480,15 +1502,30 @@ int NodeServer::handle_handshake(int command,
         return 1;
     }
 
+    if (arg.node_data.version < CryptoNote::P2P_MINIMUM_VERSION) {
+        logger(Logging::DEBUGGING)
+            << context
+            << "UNSUPPORTED NETWORK AGENT VERSION CONNECTED! version="
+            << std::to_string(arg.node_data.version);
+        context.m_state = CryptoNoteConnectionContext::state_shutdown;
+        return 1;
+    } else if (arg.node_data.version > CryptoNote::P2P_CURRENT_VERSION) {
+        logger(Logging::WARNING)
+            << context
+            << "Our software may be out of date. Please visit: "
+            << CryptoNote::LATEST_VERSION_URL
+            << " for the latest version.";
+    }
+
     if(!context.m_is_income) {
         add_host_fail(context.m_remote_ip);
-        logger(Logging::ERROR) << context << "COMMAND_HANDSHAKE came not from incoming connection";
+        logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE came not from incoming connection";
         context.m_state = CryptoNoteConnectionContext::state_shutdown;
         return 1;
     }
 
     if(context.peerId) {
-        logger(Logging::ERROR)
+        logger(Logging::DEBUGGING)
             << context
             << "COMMAND_HANDSHAKE came, but seems that connection already have associated peer_id "
             << "(double COMMAND_HANDSHAKE?)";
@@ -1497,7 +1534,7 @@ int NodeServer::handle_handshake(int command,
     }
 
     if(!m_payload_handler.process_payload_sync_data(arg.payload_data, context, true))  {
-        logger(Logging::ERROR)
+        logger(Logging::DEBUGGING)
             << context
             << "COMMAND_HANDSHAKE came, but process_payload_sync_data returned false, "
             << "dropping connection.";

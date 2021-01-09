@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -1328,8 +1328,11 @@ void WalletApi::testIWalletDataCompatibility(bool details, const std::string& ca
     iWalletCache.onTransactionUpdated(item.first, item.second);
   }
 
+  std::vector<Crypto::Hash> safeTxes;
+  // TODO: fill tx data for test
+
   std::ofstream stream(BOB_WALLET_PATH, std::ios_base::binary);
-  walletSerializer.serialize(stream, "pass", details, std::string());
+  walletSerializer.serialize(stream, "pass", details, std::string(), safeTxes);
   stream.flush();
   stream.close();
 

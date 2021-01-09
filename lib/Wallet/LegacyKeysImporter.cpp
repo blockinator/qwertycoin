@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -102,7 +102,8 @@ void importLegacyKeys(const std::string &legacyKeysFilename,
     std::string cache;
 
     CryptoNote::WalletLegacySerializer importer(account, transactionsCache);
-    importer.serialize(destination, password, false, cache);
+    std::vector<Crypto::Hash> safeTxes;
+    importer.serialize(destination, password, false, cache, safeTxes);
 }
 
 } // namespace CryptoNote

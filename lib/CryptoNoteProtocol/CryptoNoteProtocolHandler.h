@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -29,6 +29,8 @@
 #include <P2p/P2pProtocolDefinitions.h>
 #include <P2p/NetNodeCommon.h>
 #include <P2p/ConnectionContext.h>
+
+#define CURRENCY_PROTOCOL_MAX_OBJECT_REQUEST_COUNT 500
 
 namespace System {
 
@@ -66,7 +68,7 @@ public:
     bool get_payload_sync_data(CORE_SYNC_DATA &hshd);
     bool process_payload_sync_data(const CORE_SYNC_DATA &hshd,
                                    CryptoNoteConnectionContext &context,
-                                   bool is_inital);
+                                   bool is_initial);
     int handleCommand(bool is_notify,
                       int command,
                       const BinaryArray &in_buff,

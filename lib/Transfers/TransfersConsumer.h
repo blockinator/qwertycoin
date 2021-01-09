@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2018, The BBSCoin Developers
 // Copyright (c) 2018, The Karbo Developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -67,6 +67,8 @@ public:
     std::error_code addUnconfirmedTransaction(const ITransactionReader &transaction) override;
     void removeUnconfirmedTransaction(const Crypto::Hash &transactionHash) override;
 
+
+    void markTransactionSafe(const Crypto::Hash &transactionHash);
 private:
     template <typename F>
     void forEachSubscription(F action)

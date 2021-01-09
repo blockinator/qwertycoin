@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 // Copyright (c) 2016, The Forknote developers
 //
 // This file is part of Qwertycoin.
@@ -30,15 +30,17 @@
 #include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/TransactionExtra.h>
 #include <CryptoNoteCore/TransactionPool.h>
+#include <Global/Constants.h>
+#include <Global/CryptoNoteConfig.h>
 #include <Serialization/SerializationTools.h>
 #include <Serialization/BinarySerializationTools.h>
-#include "../src/config/CryptoNoteConfig.h" // TODO: Replace with <...> path.
 
 #define CURRENT_MEMPOOL_ARCHIVE_VER 1
 
 #undef ERROR
 
 using namespace Logging;
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 

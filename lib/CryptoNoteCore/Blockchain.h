@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2016, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -31,6 +31,7 @@
 #include <CryptoNoteCore/CryptoNoteFormatUtils.h>
 #include <CryptoNoteCore/Currency.h>
 #include <CryptoNoteCore/IBlockchainStorageObserver.h>
+#include <CryptoNoteCore/IMinerHandler.h>
 #include <CryptoNoteCore/IntrusiveLinkedList.h>
 #include <CryptoNoteCore/ITransactionValidator.h>
 #include <CryptoNoteCore/MessageQueue.h>
@@ -92,13 +93,17 @@ public:
     uint32_t getCurrentBlockchainHeight(); // TODO: rename to getCurrentBlockchainSize
     Crypto::Hash getTailId();
     Crypto::Hash getTailId(uint32_t &height);
-    difficulty_type getDifficultyForNextBlock();
+    difficulty_type getDifficultyForNextBlock(uint64_t nextBlockTime);
+    bool getDifficultyStat(uint32_t height, IMinerHandler::stat_period period,
+                           uint32_t& block_num, uint64_t& avg_solve_time,
+                           uint64_t& stddev_solve_time, uint32_t& outliers_num,
+                           difficulty_type &avg_diff, difficulty_type &min_diff,
+                           difficulty_type &max_diff);
     uint64_t getBlockTimestamp(uint32_t height);
     uint64_t getMinimalFee(uint32_t height);
     uint64_t getCoinsInCirculation();
     uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
-    uint8_t blockMajorVersion;
-    bool addNewBlock(const Block &bl_, block_verification_context &bvc);
+    bool addNewBlock(const Block &bl, block_verification_context &bvc);
     bool resetAndSetGenesisBlock(const Block &b);
     bool haveBlock(const Crypto::Hash &id);
     size_t getTotalTransactions();
@@ -305,7 +310,6 @@ private:
 
     std::string m_config_folder;
     Checkpoints m_checkpoints;
-    std::atomic<bool> m_is_in_checkpoint_zone;
 
     typedef SwappedVector<BlockEntry> Blocks;
     typedef std::unordered_map<Crypto::Hash, uint32_t> BlockMap;
@@ -328,7 +332,7 @@ private:
     PaymentIdIndex m_paymentIdIndex;
     TimestampBlocksIndex m_timestampIndex;
     GeneratedTransactionsIndex m_generatedTransactionsIndex;
-    OrphanBlocksIndex m_orthanBlocksIndex;
+    OrphanBlocksIndex m_orphanBlocksIndex;
     bool m_blockchainIndexesEnabled;
 
     IntrusiveLinkedList<MessageQueue<BlockchainMessage>> m_messageQueueList;
@@ -345,9 +349,8 @@ private:
         const Crypto::Hash &id,
         block_verification_context &bvc,
         bool sendNewAlternativeBlockMessage = true);
-    difficulty_type get_next_difficulty_for_alternative_chain(
-        const std::list<blocks_ext_by_hash::iterator> &alt_chain,
-        BlockEntry &bei);
+    difficulty_type get_next_difficulty_for_alternative_chain(const std::list<blocks_ext_by_hash::iterator> &alt_chain,
+        BlockEntry &bei, uint64_t nextBlockTime);
     bool prevalidate_miner_transaction(const Block &b, uint32_t height);
     bool validate_miner_transaction(
         const Block &b,

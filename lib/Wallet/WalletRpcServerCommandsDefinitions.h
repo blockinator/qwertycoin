@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2014-2016, The Monero Project
 // Copyright (c) 2016-2018, Karbo developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -22,9 +22,9 @@
 #include <CryptoNoteCore/CryptoNoteBasic.h>
 #include <CryptoNoteProtocol/CryptoNoteProtocolDefinitions.h>
 #include <crypto/hash.h>
+#include <Global/CryptoNoteConfig.h>
 #include <Rpc/CoreRpcServerCommandsDefinitions.h>
 #include <Wallet/WalletRpcServerErrorCodes.h>
-#include <../src/config/CryptoNoteConfig.h>
 
 #define WALLET_RPC_STATUS_OK "OK"
 #define WALLET_RPC_STATUS_BUSY "BUSY"
@@ -313,7 +313,14 @@ struct COMMAND_RPC_GET_HEIGHT
 };
 
 // command: reset
-struct COMMAND_RPC_RESET
+struct COMMAND_RPC_RESCAN
+{
+    typedef CryptoNote::EMPTY_STRUCT request;
+    typedef CryptoNote::EMPTY_STRUCT response;
+};
+
+// command: purge
+struct COMMAND_RPC_PURGE
 {
     typedef CryptoNote::EMPTY_STRUCT request;
     typedef CryptoNote::EMPTY_STRUCT response;

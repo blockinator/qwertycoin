@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -45,6 +45,7 @@ public:
     void markTransactionConfirmed(const TransactionBlockInfo &block,
                                   const Crypto::Hash &transactionHash,
                                   const std::vector<uint32_t> &globalIndices);
+    void markTransactionSafe(const Crypto::Hash &transactionHash);
 
     // ITransfersSubscription
     AccountPublicAddress getAddress() override;

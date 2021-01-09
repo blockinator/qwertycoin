@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -150,6 +150,7 @@ void toString(const T &value, std::string &text)
 bool loadFileToString(const std::string &filepath, std::string &buf);
 bool saveStringToFile(const std::string &filepath, const std::string &buf);
 
+std::string base64Encode(std::string const &encodableString);
 std::string base64Decode(std::string const &encoded_string);
 
 std::string ipAddressToString(uint32_t ip);

@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -209,13 +209,19 @@ private:
     Common::JsonValue psResp;
 };
 
-void invokeJsonRpcCommand(HttpClient &httpClient, JsonRpcRequest &req, JsonRpcResponse &res);
+void invokeJsonRpcCommand(HttpClient &httpClient,
+                          JsonRpcRequest &req,
+                          JsonRpcResponse &res,
+                          const std::string &user = "",
+                          const std::string &password = "");
 
 template <typename Request, typename Response>
 void invokeJsonRpcCommand(HttpClient &httpClient,
                           const std::string &method,
                           const Request &req,
-                          Response &res)
+                          Response &res,
+                          const std::string &user = "",
+                          const std::string &password = "")
 {
     JsonRpcRequest jsReq;
     JsonRpcResponse jsRes;
@@ -223,7 +229,7 @@ void invokeJsonRpcCommand(HttpClient &httpClient,
     jsReq.setMethod(method);
     jsReq.setParams(req);
 
-    invokeJsonRpcCommand(httpClient, jsReq, jsRes);
+    invokeJsonRpcCommand(httpClient, jsReq, jsRes, user, password);
 
     jsRes.getResult(res);
 }

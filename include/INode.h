@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -106,6 +106,7 @@ public:
     virtual uint64_t getLastLocalBlockTimestamp() const = 0;
     virtual uint32_t getNodeHeight() const = 0;
     virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const = 0;
+    virtual uint32_t getGRBHeight() const = 0;
 
     virtual void relayTransaction(const Transaction &transaction, const Callback &callback) = 0;
     virtual void getRandomOutsByAmounts(

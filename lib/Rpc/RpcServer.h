@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2016, The Forknote developers
 // Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -24,9 +24,12 @@
 #include <unordered_map>
 #include <Common/Math.h>
 #include <CryptoNoteCore/ITransaction.h>
+#include <Global/Constants.h>
 #include <Logging/LoggerRef.h>
 #include <Rpc/CoreRpcServerCommandsDefinitions.h>
 #include <Rpc/HttpServer.h>
+
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 
@@ -64,6 +67,7 @@ public:
     bool setViewKey(const std::string &view_key);
     bool setContactInfo(const std::string &contact);
     bool masternode_check_incoming_tx(const BinaryArray &tx_blob);
+    std::string getCorsDomain();
 
 private:
     void processRequest(const HttpRequest &request, HttpResponse &response) override;
@@ -108,6 +112,9 @@ private:
     bool on_get_transactions(
         const COMMAND_RPC_GET_TRANSACTIONS::request &req,
         COMMAND_RPC_GET_TRANSACTIONS::response &res);
+    bool onGetTransactionsByHeights(
+            const COMMAND_RPC_GET_TRANSACTIONS_BY_HEIGHTS::request &req,
+            COMMAND_RPC_GET_TRANSACTIONS_BY_HEIGHTS::response &res);
     bool on_send_raw_tx(
         const COMMAND_RPC_SEND_RAW_TX::request &req,
         COMMAND_RPC_SEND_RAW_TX::response &res);
@@ -224,6 +231,10 @@ private:
     bool on_verify_message(
         const COMMAND_RPC_VERIFY_MESSAGE::request &req,
         COMMAND_RPC_VERIFY_MESSAGE::response &res);
+
+    bool on_get_difficulty_stat(
+        const COMMAND_RPC_GET_DIFFICULTY_STAT::request &req,
+        COMMAND_RPC_GET_DIFFICULTY_STAT::response &res);
 
     bool f_getMixin(const Transaction &transaction, uint64_t &mixin);
 

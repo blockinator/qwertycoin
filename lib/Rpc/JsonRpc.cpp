@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -16,6 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Qwertycoin.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <Common/StringTools.h>
 #include <CryptoNoteCore/TransactionPool.h>
 #include <Rpc/HttpClient.h>
 #include <Rpc/JsonRpc.h>
@@ -60,10 +61,18 @@ JsonRpcError::JsonRpcError(int c, const std::string &msg)
 {
 }
 
-void invokeJsonRpcCommand(HttpClient &httpClient, JsonRpcRequest &jsReq, JsonRpcResponse &jsRes)
+void invokeJsonRpcCommand(HttpClient &httpClient,
+                          JsonRpcRequest &jsReq,
+                          JsonRpcResponse &jsRes,
+                          const std::string &user,
+                          const std::string &password)
 {
     HttpRequest httpReq;
     HttpResponse httpRes;
+
+    if (!user.empty() || !password.empty()) {
+        httpReq.addHeader("Authorization", "Basic " + Common::base64Encode(user + ":" + password));
+    }
 
     httpReq.addHeader("Content-Type", "application/json");
     httpReq.setUrl("/json_rpc");

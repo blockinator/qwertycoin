@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -17,10 +17,10 @@
 // along with Qwertycoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <Common/StringTools.h>
-#include <config/CryptoNoteConfig.h>
 #include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/CryptoNoteFormatUtils.h>
 #include <CryptoNoteCore/TransactionExtra.h>
+#include <Global/CryptoNoteConfig.h>
 #include <Rpc/HttpClient.h>
 #include <Rpc/CoreRpcServerCommandsDefinitions.h>
 #include <Rpc/JsonRpc.h>
@@ -62,7 +62,7 @@ void adjustMergeMiningTag(Block& blockTemplate)
         }
 
         blockTemplate.parentBlock.baseTransaction.extra.clear();
-        auto extra = blockTemplate.parentBlock.baseTransaction.extra;
+        auto& extra = blockTemplate.parentBlock.baseTransaction.extra;
         if (!CryptoNote::appendMergeMiningTagToExtra(extra, mmTag)) {
             throw std::runtime_error("Couldn't append merge mining tag");
         }

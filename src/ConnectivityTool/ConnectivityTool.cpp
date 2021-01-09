@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -18,6 +18,7 @@
 
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
+#include <Breakpad/Breakpad.h>
 #include <Common/CommandLine.h>
 #include <Common/StringTools.h>
 #include <crypto/crypto.h>
@@ -412,6 +413,8 @@ bool generate_and_print_keys()
 
 int main(int argc, char *argv[])
 {
+    Qwertycoin::Breakpad::ExceptionHandler exceptionHandler;
+
     // Declare the supported options.
     po::options_description desc_general("General options");
     command_line::add_arg(desc_general, command_line::arg_help);

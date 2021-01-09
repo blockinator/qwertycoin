@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2018, Karbo developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -47,11 +47,13 @@ public:
         std::ostream &stream,
         const std::string &password,
         bool saveDetailed,
-        const std::string &cache);
+        const std::string &cache,
+        const std::vector<Crypto::Hash> & safeTxes);
     void deserialize(
         std::istream &stream,
         const std::string &password,
-        std::string &cache);
+        std::string &cache,
+        std::vector<Crypto::Hash> & safeTxes);
 
 private:
     void saveKeys(CryptoNote::ISerializer &serializer);

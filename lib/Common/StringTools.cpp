@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -244,6 +244,35 @@ bool is_base64(unsigned char c)
 }
 
 } // namespace
+
+std::string base64Encode(std::string const &encodableString)
+{
+    static const char* encodingTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const size_t resultSize = 4 * ((encodableString.size() + 2) / 3);
+    std::string result;
+    result.reserve(resultSize);
+
+    for (size_t i = 0; i < encodableString.size(); i += 3) {
+        size_t a = static_cast<size_t>(encodableString[i]);
+        size_t b = i + 1 < encodableString.size() ? static_cast<size_t>(encodableString[i + 1]) : 0;
+        size_t c = i + 2 < encodableString.size() ? static_cast<size_t>(encodableString[i + 2]) : 0;
+
+        result.push_back(encodingTable[a >> 2]);
+        result.push_back(encodingTable[((a & 0x3) << 4) | (b >> 4)]);
+        if (i + 1 < encodableString.size()) {
+            result.push_back(encodingTable[((b & 0xF) << 2) | (c >> 6)]);
+            if (i + 2 < encodableString.size()) {
+                result.push_back(encodingTable[c & 0x3F]);
+            }
+        }
+    }
+
+    while (result.size() != resultSize) {
+        result.push_back('=');
+    }
+
+    return result;
+}
 
 std::string base64Decode(const std::string &encoded_string)
 {

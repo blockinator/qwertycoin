@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -33,6 +33,8 @@
 #include "INodeStubs.h"
 #include "TestBlockchainGenerator.h"
 #include <Logging/ConsoleLogger.h>
+
+using namespace Qwertycoin;
 
 class TrivialWalletObserver : public CryptoNote::IWalletLegacyObserver
 {
@@ -1549,7 +1551,7 @@ TEST_F(WalletLegacyApi, resetDoesNotChangeAddress) {
   ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 
   auto expectedAddress = alice->getAddress();
-  alice->reset();
+  alice->purge();
   ASSERT_EQ(expectedAddress, alice->getAddress());
 
   alice->shutdown();
@@ -1562,7 +1564,7 @@ TEST_F(WalletLegacyApi, resetDoesNotChangeAccountKeys) {
   CryptoNote::AccountKeys expectedAccountKeys;
   alice->getAccountKeys(expectedAccountKeys);
 
-  alice->reset();
+  alice->purge();
 
   CryptoNote::AccountKeys actualAccountKeys;
   alice->getAccountKeys(actualAccountKeys);
@@ -1581,7 +1583,7 @@ TEST_F(WalletLegacyApi, resetDoesNotRemoveObservers) {
   WalletSynchronizationProgressUpdatedObserver observer;
   CryptoNote::WalletHelper::IWalletRemoveObserverGuard observerGuard(*alice, observer);
 
-  alice->reset();
+  alice->purge();
   observer.m_current = 0;
 
   aliceNode->updateObservers();
@@ -1600,7 +1602,7 @@ TEST_F(WalletLegacyApi, resetDoesNotChangePassword) {
   alice->initAndGenerate(password);
   ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 
-  alice->reset();
+  alice->purge();
   ASSERT_TRUE(static_cast<bool>(alice->changePassword(newPassword, password)));
   ASSERT_FALSE(static_cast<bool>(alice->changePassword(password, newPassword)));
 
@@ -1617,7 +1619,7 @@ TEST_F(WalletLegacyApi, resetDoesNotChangePassword) {
 //  ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 //
 //  ASSERT_EQ(TEST_BLOCK_REWARD, alice->pendingBalance());
-//  alice->reset();
+//  alice->purge();
 //  ASSERT_EQ(0, alice->pendingBalance());
 //
 //  alice->shutdown();
@@ -1634,7 +1636,7 @@ TEST_F(WalletLegacyApi, resetDoesNotChangePassword) {
 //  ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 //
 //  ASSERT_EQ(TEST_BLOCK_REWARD, alice->actualBalance());
-//  alice->reset();
+//  alice->purge();
 //  ASSERT_EQ(0, alice->actualBalance());
 //
 //  alice->shutdown();
@@ -1650,7 +1652,7 @@ TEST_F(WalletLegacyApi, resetClearsTransactionHistory) {
   ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 
   ASSERT_EQ(1, alice->getTransactionCount());
-  alice->reset();
+  alice->purge();
   ASSERT_EQ(0, alice->getTransactionCount());
 
   alice->shutdown();
@@ -1670,7 +1672,7 @@ TEST_F(WalletLegacyApi, resetClearsTransactionHistory) {
 //  ASSERT_NO_FATAL_FAILURE(WaitWalletSend(aliceWalletObserver.get()));
 //
 //  ASSERT_EQ(1, alice->getTransferCount());
-//  alice->reset();
+//  alice->purge();
 //  ASSERT_EQ(0, alice->getTransferCount());
 //
 //  alice->shutdown();
@@ -1685,7 +1687,7 @@ TEST_F(WalletLegacyApi, resetClearsTransactionHistory) {
 //  aliceNode->updateObservers();
 //  ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 //
-//  alice->reset();
+//  alice->purge();
 //  aliceNode->updateObservers();
 //  ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 //
@@ -1704,7 +1706,7 @@ TEST_F(WalletLegacyApi, resetClearsTransactionHistory) {
 //  aliceNode->updateObservers();
 //  ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 //
-//  alice->reset();
+//  alice->purge();
 //  aliceNode->updateObservers();
 //  ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 //
@@ -1722,7 +1724,7 @@ TEST_F(WalletLegacyApi, resetAndSyncRestoreTransactions) {
   aliceNode->updateObservers();
   ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 
-  alice->reset();
+  alice->purge();
   aliceNode->updateObservers();
   ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 
@@ -1743,7 +1745,7 @@ TEST_F(WalletLegacyApi, resetAndSyncDoNotRestoreTransfers) {
   alice->sendTransaction({ alice->getAddress(), 100 }, m_currency.minimumFee());
   ASSERT_NO_FATAL_FAILURE(WaitWalletSend(aliceWalletObserver.get()));
 
-  alice->reset();
+  alice->purge();
   aliceNode->updateObservers();
   ASSERT_NO_FATAL_FAILURE(WaitWalletSync(aliceWalletObserver.get()));
 
@@ -1842,7 +1844,7 @@ TEST_F(WalletLegacyApi, walletLoadsNullSpendSecretKey) {
 
   Crypto::generate_keys(accountKeys.address.spendPublicKey, accountKeys.spendSecretKey);
   Crypto::generate_keys(accountKeys.address.viewPublicKey, accountKeys.viewSecretKey);
-  accountKeys.spendSecretKey = CryptoNote::NULL_SECRET_KEY;
+  accountKeys.spendSecretKey = NULL_SECRET_KEY;
 
   alice->initWithKeys(accountKeys, "pass");
   WaitWalletSync(aliceWalletObserver.get());

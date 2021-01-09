@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -33,6 +33,8 @@
 #include <sys/stat.h>
 #include <errno.h>
 #endif
+
+#include <Breakpad/Breakpad.h>
 
 #define SERVICE_NAME "Payment Gate"
 
@@ -348,6 +350,8 @@ int unregisterService()
 
 int main(int argc, char **argv)
 {
+    Qwertycoin::Breakpad::ExceptionHandler exceptionHandler;
+
     PaymentGateService pg;
     ppg = &pg;
 

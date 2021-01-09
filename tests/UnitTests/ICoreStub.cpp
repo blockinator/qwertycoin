@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -22,7 +22,9 @@
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/IBlock.h"
 #include "CryptoNoteCore/VerificationContext.h"
+#include "Global/Constants.h"
 
+using namespace Qwertycoin;
 
 ICoreStub::ICoreStub() :
     topHeight(0),
@@ -191,7 +193,7 @@ size_t ICoreStub::addChain(const std::vector<const CryptoNote::IBlock*>& chain) 
   for (const CryptoNote::IBlock* block : chain) {
     for (size_t txNumber = 0; txNumber < block->getTransactionCount(); ++txNumber) {
       const CryptoNote::Transaction& tx = block->getTransaction(txNumber);
-      Crypto::Hash txHash = CryptoNote::NULL_HASH;
+      Crypto::Hash txHash = NULL_HASH;
       size_t blobSize = 0;
       getObjectHash(tx, txHash, blobSize);
       addTransaction(tx);
@@ -206,7 +208,7 @@ size_t ICoreStub::addChain(const std::vector<const CryptoNote::IBlock*>& chain) 
 Crypto::Hash ICoreStub::getBlockIdByHeight(uint32_t height) {
   auto iter = blockHashByHeightIndex.find(height);
   if (iter == blockHashByHeightIndex.end()) {
-    return CryptoNote::NULL_HASH;
+    return NULL_HASH;
   }
   return iter->second;
 }
@@ -266,7 +268,7 @@ bool ICoreStub::getAlreadyGeneratedCoins(const Crypto::Hash& hash, uint64_t& gen
 }
 
 bool ICoreStub::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
-    uint64_t& reward, int64_t& emissionChange) {
+    uint64_t& reward, int64_t& emissionChange, uint32_t height, uint64_t blockTarget) {
   return true;
 }
 
@@ -389,6 +391,9 @@ uint64_t ICoreStub::getMinimalFeeForHeight(uint32_t height) {
 uint64_t ICoreStub::getMinimalFee() {
 	return 10000000000ULL;
 };
+uint64_t ICoreStub::getBlockTimestamp(uint32_t height) {
+    return (uint64_t)4;
+}
 uint32_t ICoreStub::get_current_blockchain_height() {
     return (uint32_t)4;
 };

@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2018, Karbo developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -22,6 +22,7 @@
 #include <Common/MemoryInputStream.h>
 #include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/CryptoNoteBasic.h>
+#include <Global/Constants.h>
 #include <Wallet/WalletErrors.h>
 #include <Wallet/WalletSerializationV1.h>
 #include <Wallet/WalletUtils.h>
@@ -32,6 +33,7 @@
 using namespace Common;
 using namespace Crypto;
 using namespace CryptoNote;
+using namespace Qwertycoin;
 
 namespace {
 
@@ -100,7 +102,7 @@ struct WalletTransactionDto
     uint64_t creationTime;
     uint64_t unlockTime;
     std::string extra;
-    boost::optional<Crypto::SecretKey> secretKey = CryptoNote::NULL_SECRET_KEY;
+    boost::optional<Crypto::SecretKey> secretKey = NULL_SECRET_KEY;
 };
 
 // DO NOT CHANGE IT
@@ -277,7 +279,7 @@ WalletSerializerV1::WalletSerializerV1(ITransfersObserver &transfersObserver,
                                        uint64_t &actualBalance,
                                        uint64_t &pendingBalance,
                                        WalletsContainer &walletsContainer,
-                                       TransfersSyncronizer &synchronizer,
+                                       TransfersSynchronizer &synchronizer,
                                        UnlockTransactionJobs &unlockTransactions,
                                        WalletTransactions &transactions,
                                        WalletTransfers &transfers,

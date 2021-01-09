@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -16,6 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Qwertycoin.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <Breakpad/Breakpad.h>
 #include <Common/SignalHandler.h>
 #include <Logging/ConsoleLogger.h>
 #include <Logging/LoggerGroup.h>
@@ -25,6 +26,8 @@
 
 int main(int argc, char **argv)
 {
+    Qwertycoin::Breakpad::ExceptionHandler exceptionHandler;
+
     try {
         CryptoNote::MiningConfig config;
         config.parse(argc, argv);

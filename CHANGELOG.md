@@ -1,3 +1,24 @@
+Release Notes 6.0.1
+- Walletd Authorization Fix
+
+Release Notes 6.0.0
+- Implemented function to prevent attempt to mine blocks with timestamp less than prevBlock has
+- added Currency::nextDifficultyV6
+- Implement fixed Difficulty
+- add get_difficulty_stat RPC call (necessary for EPoW)
+- Implement "purge" command for simplewallet
+- Replaced "refresh" with "rescan"
+- Added "shrink" command
+- Consolidate Function
+- Implemented CLIF difficulty adjustment for decreasing difficulty over time with no mined blocks
+- Fix Synchronization issue when synchronize without checkpoints for CN Heavy blocks
+- Updated hunter to v0.23.254
+- Updated Breakpad Implementations for better error handlind after crash
+- Several bug fixes
+
+Release Notes 5.2.2
+- Fix Bug "Qwertycoind crashes without any message"
+
 Release Notes 5.1.3
 - Release 5.1.3 due to massive network problems in case of trying to switch to an alternative chain. The primary nodes detected this issue and blocked all outdated Nodes. To solve this Issues in short time we decided to change net network identifer to ensure that every node uses the same version.
 - This Version code is: 5.1.3.3000 (6db7f2b-g6db7f2b)

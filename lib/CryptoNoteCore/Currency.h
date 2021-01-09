@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2016, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -22,12 +22,14 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <functional>
 #include <boost/utility.hpp>
 #include <crypto/hash.h>
 #include <CryptoNoteCore/CryptoNoteBasic.h>
 #include <CryptoNoteCore/Difficulty.h>
+#include <CryptoNoteCore/IMinerHandler.h>
+#include <Global/CryptoNoteConfig.h>
 #include <Logging/LoggerRef.h>
-#include "../src/config/CryptoNoteConfig.h" // TODO: Replace with <> path.
 
 namespace CryptoNote {
 
@@ -42,6 +44,7 @@ public:
     uint64_t publicAddressBase58Prefix() const { return m_publicAddressBase58Prefix; }
     size_t minedMoneyUnlockWindow() const { return m_minedMoneyUnlockWindow; }
     size_t transactionSpendableAge() const { return m_transactionSpendableAge; }
+    size_t safeTransactionSpendableAge() const { return m_safeTransactionSpendableAge; }
     size_t expectedNumberOfBlocksPerDay() const { return m_expectedNumberOfBlocksPerDay; }
 
     size_t timestampCheckWindow() const { return m_timestampCheckWindow; }
@@ -75,6 +78,10 @@ public:
     size_t minerTxBlobReservedSize() const { return m_minerTxBlobReservedSize; }
     uint64_t maxTransactionSizeLimit() const { return m_maxTransactionSizeLimit; }
 
+    uint32_t governancePercent() const { return m_governancePercent; }
+    uint32_t governanceHeightStart() const { return m_governanceHeightStart; }
+    uint32_t governanceHeightEnd() const { return m_governanceHeightEnd; }
+
     size_t minMixin() const { return m_minMixin; }
     size_t maxMixin() const { return m_maxMixin; }
 
@@ -96,7 +103,9 @@ public:
     size_t difficultyCut() const { return m_difficultyCut; }
     size_t difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion) const
     {
-        if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
+        if (blockMajorVersion >= BLOCK_MAJOR_VERSION_6) {
+            return difficultyBlocksCount6();
+        } else if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
             return difficultyBlocksCount3() + 1;
         } else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
             return difficultyBlocksCount2();
@@ -107,6 +116,7 @@ public:
     size_t difficultyBlocksCount() const { return m_difficultyWindow + m_difficultyLag; }
     size_t difficultyBlocksCount2() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V2; }
     size_t difficultyBlocksCount3() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V3; }
+    size_t difficultyBlocksCount6() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V6; }
 
     size_t maxBlockSizeInitial() const { return m_maxBlockSizeInitial; }
     uint64_t maxBlockSizeGrowthSpeedNumerator() const { return m_maxBlockSizeGrowthSpeedNumerator; }
@@ -161,7 +171,9 @@ public:
         uint64_t alreadyGeneratedCoins,
         uint64_t fee,
         uint64_t &reward,
-        int64_t &emissionChange) const;
+        int64_t &emissionChange,
+        uint32_t height,
+        uint64_t blockTarget = CryptoNote::parameters::DIFFICULTY_TARGET) const;
     size_t maxBlockCumulativeSize(uint64_t height) const;
 
     bool constructMinerTx(
@@ -174,7 +186,8 @@ public:
         const AccountPublicAddress &minerAddress,
         Transaction &tx,
         const BinaryArray &extraNonce = BinaryArray(),
-        size_t maxOuts = 1) const;
+        size_t maxOuts = 1,
+        uint64_t blockTarget = 0xffffffffffffffff) const;
 
     bool isFusionTransaction(const Transaction& transaction, uint32_t height) const;
     bool isFusionTransaction(const Transaction& transaction, size_t size, uint32_t height) const;
@@ -203,11 +216,14 @@ public:
 
     uint64_t roundUpMinFee(uint64_t minimalFee, int digits) const;
 
-    difficulty_type nextDifficulty(
-        uint32_t height,
+    typedef std::function<difficulty_type(IMinerHandler::stat_period, uint64_t)> lazy_stat_callback_type;
+
+    difficulty_type nextDifficulty(uint32_t height,
         uint8_t blockMajorVersion,
         std::vector<uint64_t> timestamps,
-        std::vector<difficulty_type> Difficulties) const;
+        std::vector<difficulty_type> Difficulties,
+        uint64_t nextBlockTime,
+        lazy_stat_callback_type &lazy_stat_cb) const;
     difficulty_type nextDifficultyV1(
         std::vector<uint64_t> timestamps,
         std::vector<difficulty_type> Difficulties) const;
@@ -221,6 +237,16 @@ public:
         uint8_t blockMajorVersion,
         std::vector<uint64_t> timestamps,
         std::vector<difficulty_type> Difficulties) const;
+    difficulty_type nextDifficultyV6(uint8_t blockMajorVersion,
+        std::vector<uint64_t> timestamps,
+        std::vector<difficulty_type> Difficulties,
+        uint32_t height) const;
+
+    difficulty_type getClifDifficulty(uint32_t height,
+        uint8_t blockMajorVersion,
+        difficulty_type last_difficulty, uint64_t last_timestamp,
+        uint64_t currentSolveTime,
+        lazy_stat_callback_type& lazy_stat_cb) const;
 
     bool checkProofOfWorkV1(
         Crypto::cn_context &context,
@@ -243,6 +269,11 @@ public:
         size_t outputCount,
         size_t mixinCount) const;
 
+    bool isGovernanceEnabled(uint32_t height) const;
+    bool getGovernanceAddressAndKey(AccountKeys& m_account_keys) const;
+    uint64_t getGovernanceReward(uint64_t base_reward) const;
+    bool validate_government_fee(const Transaction& baseTx) const;
+
     static const std::vector<uint64_t> PRETTY_AMOUNTS;
 
 private:
@@ -262,6 +293,7 @@ private:
     uint64_t m_publicAddressBase58Prefix;
     size_t m_minedMoneyUnlockWindow;
     size_t m_transactionSpendableAge;
+    size_t m_safeTransactionSpendableAge;
     size_t m_expectedNumberOfBlocksPerDay;
 
     size_t m_timestampCheckWindow;
@@ -283,6 +315,10 @@ private:
 
     uint64_t m_minimumFee;
 
+    uint32_t m_governancePercent; 
+    uint32_t m_governanceHeightStart;
+    uint32_t m_governanceHeightEnd;
+
     size_t m_minMixin;
     size_t m_maxMixin;
 
@@ -292,6 +328,7 @@ private:
     size_t m_difficultyWindow;
     size_t m_difficultyLag;
     size_t m_difficultyCut;
+    difficulty_type m_fixedDifficulty;
 
     size_t m_maxBlockSizeInitial;
     uint64_t m_maxBlockSizeGrowthSpeedNumerator;
@@ -373,6 +410,11 @@ public:
         m_currency.m_transactionSpendableAge = val;
         return *this;
     }
+    CurrencyBuilder &safeTransactionSpendableAge(size_t val)
+    {
+        m_currency.m_safeTransactionSpendableAge = val;
+        return *this;
+    }
     CurrencyBuilder &expectedNumberOfBlocksPerDay(size_t val)
     {
         m_currency.m_expectedNumberOfBlocksPerDay = val;
@@ -426,6 +468,22 @@ public:
     CurrencyBuilder &maxTransactionSizeLimit(uint64_t val)
     {
         m_currency.m_maxTransactionSizeLimit = val;
+        return *this;
+    }
+
+    CurrencyBuilder& governancePercent(uint32_t val)
+    {
+        m_currency.m_governancePercent = val;
+        return *this;
+    }
+    CurrencyBuilder& governanceHeightStart(uint32_t val) 
+    {
+        m_currency.m_governanceHeightStart = val;
+        return *this;
+    }
+    CurrencyBuilder& governanceHeightEnd(uint32_t val)
+    {
+        m_currency.m_governanceHeightEnd = val;
         return *this;
     }
 
@@ -569,6 +627,8 @@ public:
     }
 
     CurrencyBuilder &testnet(bool val) { m_currency.m_testnet = val; return *this; }
+
+    CurrencyBuilder &fix_difficulty(difficulty_type val) { m_currency.m_fixedDifficulty = val; return *this; }
 
 private:
     Currency m_currency;

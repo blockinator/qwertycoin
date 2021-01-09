@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018, The BBSCoin Developers
 // Copyright (c) 2017-2018, Karbo developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -44,6 +44,7 @@
 #include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/ITransaction.h>
 #include <CryptoNoteCore/TransactionApi.h>
+#include <Global/Constants.h>
 #include <System/EventLock.h>
 #include <System/RemoteContext.h>
 #include <Transfers/TransfersContainer.h>
@@ -3426,7 +3427,7 @@ void WalletGreen::unlockBalances(uint32_t height)
     }
 }
 
-void WalletGreen::onTransactionUpdated(ITransfersSubscription */*object*/,
+void WalletGreen::onTransactionUpdated(ITransfersSubscription* /*object*/,
                                        const Crypto::Hash &/*transactionHash*/)
 {
   // Deprecated, ignore it.

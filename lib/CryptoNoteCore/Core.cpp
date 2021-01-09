@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers, The Karbowanec developers
+// Copyright (c) 2018-2019, The Karbowanec developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -34,15 +35,15 @@
 #include <CryptoNoteCore/Miner.h>
 #include <CryptoNoteCore/TransactionExtra.h>
 #include <CryptoNoteProtocol/CryptoNoteProtocolDefinitions.h>
+#include <Global/CryptoNoteConfig.h>
 #include <Logging/LoggerRef.h>
 #include <Rpc/CoreRpcServerCommandsDefinitions.h>
-#include "../src/config/CryptoNoteConfig.h" // TODO: User absoute paths instead of relative path.
 
 #undef ERROR
 
 using namespace Logging;
-
 using namespace  Common;
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 
@@ -196,7 +197,7 @@ bool core::init(const CoreConfig &config, const MinerConfig &minerConfig, bool l
 
     r = m_miner->init(minerConfig);
     if (!(r)) {
-        logger(ERROR, BRIGHT_RED) << "Failed to initialize blockchain storage";
+        logger(ERROR, BRIGHT_RED) << "Failed to initialize miner";
         return false;
     }
 
@@ -411,25 +412,30 @@ bool core::check_tx_fee(
         if (!findTransactionExtraFieldByType(txExtraFields, ttl)) {
             ttl.ttl = 0;
 
-            // TODO: simplify overcomplecated expression.
+            // TODO: simplify overcomplicated expression.
             if (height < CryptoNote::parameters::MINIMUM_FEE_V2_HEIGHT ? fee < CryptoNote::parameters::MINIMUM_FEE_V1 : (getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_6 ? fee < m_currency.minimumFee() : fee < getMinimalFeeForHeight(loose_check ? height - CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY : height))) {
-                logger(ERROR)
-                    << "[Core] Transaction fee is not enough: "
-                    << m_currency.formatAmount(fee)
-                    << ", minimum fee: "
-                    // TODO: simplify overcomplecated expression.
-                    << m_currency.formatAmount(getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_6 ? m_currency.minimumFee() : getMinimalFeeForHeight(loose_check ? height - CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY : height));
+                if (height < CryptoNote::parameters::MINIMUM_FEE_V0_HEIGHT) {
+                    // We changed the minimum fee to a higher one (0.01 -> 1 QWC in the past to fix some floods)
+                    // Now we have to fix this in a future PR with a proper fee check
+                    return true;
+                } else {
+                    logger(ERROR)
+                        << "[Core] Transaction fee is not enough: "
+                        << m_currency.formatAmount(fee)
+                        << ", minimum fee: "
+                        // TODO: simplify overcomplicated expression.
+                        << m_currency.formatAmount(getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_6 ? m_currency.minimumFee() : getMinimalFeeForHeight(loose_check ? height - CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY : height));
 
-                tvc.m_verification_failed = true;
-                tvc.m_tx_fee_too_small = true;
+                    tvc.m_verification_failed = true;
+                    tvc.m_tx_fee_too_small = true;
 
-                return false;
+                    return false;
+                }
             }
         } else {
             return true;
         }
     }
-
     return true;
 }
 
@@ -635,11 +641,6 @@ bool core::get_block_template(
     {
         LockedBlockchainStorage blockchainLock(m_blockchain);
         height = m_blockchain.getCurrentBlockchainHeight();
-        diffic = m_blockchain.getDifficultyForNextBlock();
-        if (!(diffic)) {
-            logger(ERROR, BRIGHT_RED) << "difficulty overhead.";
-            return false;
-        }
 
         b = boost::value_initialized<Block>();
         b.majorVersion = m_blockchain.getBlockMajorVersionForHeight(height);
@@ -707,6 +708,12 @@ bool core::get_block_template(
             }
         }
 
+        diffic = m_blockchain.getDifficultyForNextBlock(b.timestamp);
+        if (!(diffic)) {
+            logger(ERROR, BRIGHT_RED) << "difficulty overhead.";
+            return false;
+        }
+
         median_size = m_blockchain.getCurrentCumulativeBlocksizeLimit() / 2;
         already_generated_coins = m_blockchain.getCoinsInCirculation();
     }
@@ -721,7 +728,22 @@ bool core::get_block_template(
             txs_size,
             fee)
         ) {
+        logger(ERROR, BRIGHT_RED) << "failed to fill block template from mempool.";
         return false;
+    }
+
+    uint32_t previousBlockHeight = 0;
+    uint64_t blockTarget = CryptoNote::parameters::DIFFICULTY_TARGET;
+
+    if (height >= CryptoNote::parameters::UPGRADE_HEIGHT_V6) {
+        getBlockHeight(b.previousBlockHash, previousBlockHeight);
+        uint64_t prev_timestamp = getBlockTimestamp(previousBlockHeight);
+        if(prev_timestamp >= b.timestamp) {
+            logger(ERROR, BRIGHT_RED) << "incorrect timestamp, prev = "
+               << prev_timestamp << ",  new = " << b.timestamp;
+            return false;
+        }
+        blockTarget = b.timestamp - getBlockTimestamp(previousBlockHeight);
     }
 
     // two-phase miner transaction generation: we don't know exact block size until we prepare
@@ -739,7 +761,8 @@ bool core::get_block_template(
         adr,
         b.baseTransaction,
         ex_nonce,
-        14
+        14,
+        blockTarget
     );
     if (!r) {
         logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, first chance";
@@ -758,7 +781,8 @@ bool core::get_block_template(
             adr,
             b.baseTransaction,
             ex_nonce,
-            14
+            14,
+            blockTarget
         );
 
         if (!(r)) {
@@ -821,6 +845,19 @@ bool core::get_block_template(
     logger(ERROR, BRIGHT_RED) << "Failed to create_block_template with " << 10 << " tries";
 
     return false;
+}
+
+bool core::get_difficulty_stat(uint32_t height,
+                               IMinerHandler::stat_period period,
+                               uint32_t &block_num,
+                               uint64_t &avg_solve_time,
+                               uint64_t &stddev_solve_time,
+                               uint32_t &outliers_num,
+                               difficulty_type &avg_diff,
+                               difficulty_type &min_diff,
+                               difficulty_type &max_diff)
+{
+    return m_blockchain.getDifficultyStat(height, period, block_num, avg_solve_time, stddev_solve_time, outliers_num, avg_diff,  min_diff, max_diff);
 }
 
 std::vector<Crypto::Hash> core::findBlockchainSupplement(
@@ -890,6 +927,13 @@ bool core::handle_block_found(Block &b)
 
     if (bvc.m_verification_failed) {
         logger(ERROR) << "mined block failed verification";
+    } else {
+        if (m_blocksToFind > 0) {
+            m_blocksFound++;
+            if (m_blocksFound >= m_blocksToFind) {
+                get_miner().send_stop_signal();
+            }
+        }
     }
 
     return bvc.m_added_to_main_chain;
@@ -1434,7 +1478,9 @@ bool core::getBlockReward(
     uint64_t alreadyGeneratedCoins,
     uint64_t fee,
     uint64_t &reward,
-    int64_t &emissionChange)
+    int64_t &emissionChange,
+    uint32_t height,
+    uint64_t blockTarget)
 {
     return m_currency.getBlockReward(
         blockMajorVersion,
@@ -1443,7 +1489,9 @@ bool core::getBlockReward(
         alreadyGeneratedCoins,
         fee,
         reward,
-        emissionChange
+        emissionChange,
+        height,
+        blockTarget
     );
 }
 
@@ -1643,6 +1691,11 @@ uint64_t core::getMinimalFee()
     return getMinimalFeeForHeight(get_current_blockchain_height() - 1);
 }
 
+uint64_t core::getBlockTimestamp(uint32_t height)
+{
+    return m_blockchain.getBlockTimestamp(height);
+}
+
 uint64_t core::getMinimalFeeForHeight(uint32_t height)
 {
     return m_blockchain.getMinimalFee(height);
@@ -1656,9 +1709,9 @@ std::error_code core::executeLocked(const std::function<std::error_code()> &func
     return func();
 }
 
-uint64_t core::getNextBlockDifficulty()
+uint64_t core::getNextBlockDifficulty(uint64_t nextBlockTime)
 {
-    return m_blockchain.getDifficultyForNextBlock();
+    return m_blockchain.getDifficultyForNextBlock(nextBlockTime);
 }
 
 uint64_t core::getTotalGeneratedAmount()
@@ -1695,6 +1748,12 @@ bool core::fillTxExtra(const std::vector<uint8_t> &rawExtra, TransactionExtraDet
         }
     }
     return true;
+}
+
+void core::setBlocksToFind(uint64_t blocksToFind)
+{
+    m_blocksFound = 0;
+    m_blocksToFind = blocksToFind;
 }
 
 size_t core::median(std::vector<size_t> &v)
@@ -1776,10 +1835,18 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2 &blockDetails)
     }
 
     uint64_t prevBlockGeneratedCoins = 0;
+    uint32_t previousBlockHeight = 0;
+    uint64_t blockTarget = CryptoNote::parameters::DIFFICULTY_TARGET;
+
     if (blockDetails.height > 0) {
         if (!getAlreadyGeneratedCoins(block.previousBlockHash, prevBlockGeneratedCoins)) {
             return false;
         }
+    }
+
+    if (blockDetails.height >= CryptoNote::parameters::UPGRADE_HEIGHT_V6) {
+        getBlockHeight(block.previousBlockHash, previousBlockHeight);
+        blockTarget = block.timestamp - getBlockTimestamp(previousBlockHeight);
     }
 
     uint64_t maxReward = 0;
@@ -1792,7 +1859,9 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2 &blockDetails)
             prevBlockGeneratedCoins,
             0,
             maxReward,
-            emissionChange)
+            emissionChange,
+            blockDetails.height,
+            blockTarget)
         ) {
         return false;
     }
@@ -1804,7 +1873,9 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2 &blockDetails)
             prevBlockGeneratedCoins,
             0,
             currentReward,
-            emissionChange)
+            emissionChange,
+            blockDetails.height,
+            blockTarget)
         ) {
         return false;
     }
@@ -2123,6 +2194,7 @@ bool core::removeMessageQueue(MessageQueue<BlockchainMessage> &messageQueue)
 
 void core::rollbackBlockchain(uint32_t height)
 {
+    logger(INFO, BRIGHT_YELLOW) << "Rewinding blockchain to height: " << height;
     m_blockchain.rollbackBlockchainTo(height);
 }
 

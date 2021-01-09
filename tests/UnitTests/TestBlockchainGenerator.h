@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -94,7 +94,7 @@ private:
   CryptoNote::PaymentIdIndex m_paymentIdIndex;
   CryptoNote::TimestampTransactionsIndex m_timestampIndex;
   CryptoNote::GeneratedTransactionsIndex m_generatedTransactionsIndex;
-  CryptoNote::OrphanBlocksIndex m_orthanBlocksIndex;
+  CryptoNote::OrphanBlocksIndex m_orphanBlocksIndex;
 
   void addToBlockchain(const CryptoNote::Transaction& tx);
   void addToBlockchain(const std::vector<CryptoNote::Transaction>& txs);

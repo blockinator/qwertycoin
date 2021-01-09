@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
 // Copyright (c) 2014-2016, XDN developers
 // Copyright (c) 2014-2016, The Monero Project
 // Copyright (c) 2016-2018, Karbo developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -123,9 +123,12 @@ private:
 	bool on_validate_address(
 	    const wallet_rpc::COMMAND_RPC_VALIDATE_ADDRESS::request &req,
 	    wallet_rpc::COMMAND_RPC_VALIDATE_ADDRESS::response &res);
-	bool on_reset(
-	    const wallet_rpc::COMMAND_RPC_RESET::request &req,
-	    wallet_rpc::COMMAND_RPC_RESET::response &res);
+    bool on_rescan(
+        const wallet_rpc::COMMAND_RPC_RESCAN::request &req,
+        wallet_rpc::COMMAND_RPC_RESCAN::response &res);
+    bool on_purge(
+        const wallet_rpc::COMMAND_RPC_PURGE::request &req,
+        wallet_rpc::COMMAND_RPC_PURGE::response &res);
 
     bool handle_command_line(const boost::program_options::variables_map& vm);
 

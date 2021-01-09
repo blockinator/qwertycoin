@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -23,6 +23,7 @@
 #include <CryptoNoteCore/CryptoNoteBasicImpl.h>
 #include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/TransactionApi.h>
+#include <Global/Constants.h>
 #include <Http/HttpRequest.h>
 #include <Http/HttpResponse.h>
 #include <NodeRpcProxy/NodeErrors.h>
@@ -43,6 +44,7 @@
 using namespace Crypto;
 using namespace Common;
 using namespace System;
+using namespace Qwertycoin;
 
 namespace CryptoNote {
 
@@ -138,12 +140,13 @@ void NodeRpcProxy::resetInternalState()
     m_stop = false;
     m_peerCount.store(0, std::memory_order_relaxed);
     m_networkHeight.store(0, std::memory_order_relaxed);
+    m_GRBHeight.store(0, std::memory_order_relaxed);
     lastLocalBlockHeaderInfo.index = 0;
     lastLocalBlockHeaderInfo.majorVersion = 0;
     lastLocalBlockHeaderInfo.minorVersion = 0;
     lastLocalBlockHeaderInfo.timestamp = 0;
-    lastLocalBlockHeaderInfo.hash = CryptoNote::NULL_HASH;
-    lastLocalBlockHeaderInfo.prevHash = CryptoNote::NULL_HASH;
+    lastLocalBlockHeaderInfo.hash = NULL_HASH;
+    lastLocalBlockHeaderInfo.prevHash = NULL_HASH;
     lastLocalBlockHeaderInfo.nonce = 0;
     lastLocalBlockHeaderInfo.isAlternative = false;
     lastLocalBlockHeaderInfo.depth = 0;
@@ -298,6 +301,7 @@ void NodeRpcProxy::updateBlockchainStatus()
 
         m_minimalFee.store(getInfoResp.min_tx_fee, std::memory_order_relaxed);
         m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
+        m_GRBHeight.store(getInfoResp.height, std::memory_order_relaxed);
     }
 
     if (m_connected != m_httpClient->isConnected()) {
@@ -400,6 +404,11 @@ BlockHeaderInfo NodeRpcProxy::getLastLocalBlockHeaderInfo() const
     std::lock_guard<std::mutex> lock(m_mutex);
 
     return lastLocalBlockHeaderInfo;
+}
+
+uint32_t NodeRpcProxy::getGRBHeight() const
+{
+    return m_GRBHeight;
 }
 
 uint32_t NodeRpcProxy::getNodeHeight() const
@@ -646,11 +655,12 @@ void NodeRpcProxy::isSynchronized(bool &syncStatus, const Callback &callback)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_state != STATE_INITIALIZED) {
+        syncStatus = false;
         callback(make_error_code(error::NOT_INITIALIZED));
         return;
     }
 
-    // TODO: NOT IMPLEMENTED!
+    syncStatus = (lastLocalBlockHeaderInfo.index == m_networkHeight);
     callback(std::error_code{});
 }
 

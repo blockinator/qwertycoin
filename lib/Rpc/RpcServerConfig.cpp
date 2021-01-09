@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -17,8 +17,8 @@
 // along with Qwertycoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <Common/CommandLine.h>
+#include <Global/CryptoNoteConfig.h>
 #include <Rpc/RpcServerConfig.h>
-#include <../src/config/CryptoNoteConfig.h>
 #include <android.h>
 
 namespace CryptoNote {

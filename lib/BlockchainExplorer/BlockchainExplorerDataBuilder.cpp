@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The Qwertycoin developers
+// Copyright (c) 2018-2020, The Qwertycoin Group.
 //
 // This file is part of Qwertycoin.
 //
@@ -23,8 +23,7 @@
 #include <CryptoNoteCore/CryptoNoteFormatUtils.h>
 #include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/TransactionExtra.h>
-#include <../src/config/CryptoNoteConfig.h>
-
+#include <Global/CryptoNoteConfig.h>
 namespace CryptoNote {
 
 BlockchainExplorerDataBuilder::BlockchainExplorerDataBuilder(ICore &core,
@@ -91,10 +90,18 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
     }
 
     uint64_t prevBlockGeneratedCoins = 0;
+    uint32_t previousBlockHeight = 0;
+    uint64_t blockTarget = CryptoNote::parameters::DIFFICULTY_TARGET;
+
     if (blockDetails.height > 0) {
         if (!m_core.getAlreadyGeneratedCoins(block.previousBlockHash, prevBlockGeneratedCoins)) {
-          return false;
+            return false;
         }
+    }
+
+    if (blockDetails.height >= CryptoNote::parameters::UPGRADE_HEIGHT_V6) {
+        m_core.getBlockHeight(block.previousBlockHash, previousBlockHeight);
+        blockTarget = block.timestamp - m_core.getBlockTimestamp(previousBlockHeight);
     }
 
     uint64_t maxReward = 0;
@@ -106,7 +113,9 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
                                prevBlockGeneratedCoins,
                                0,
                                maxReward,
-                               emissionChange)) {
+                               emissionChange,
+                               blockDetails.height,
+                               blockTarget)) {
         return false;
     }
 
@@ -116,7 +125,9 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
                                prevBlockGeneratedCoins,
                                0,
                                currentReward,
-                               emissionChange)) {
+                               emissionChange,
+                               blockDetails.height,
+                               blockTarget)) {
         return false;
     }
 
